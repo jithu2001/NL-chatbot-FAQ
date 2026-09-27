@@ -6,7 +6,7 @@ It has a React UI, a FastAPI backend and a persistent **ChromaDB** vector store,
 
 | Mode | LLM | Embeddings | Use for |
 |---|---|---|---|
-| **Hosted** (default) | **Groq** API (`llama-3.1-8b-instant`) | **fastembed** `BAAI/bge-small-en-v1.5`, in-process on CPU | Render free tier or any small server |
+| **Hosted** (default) | **Groq** API (`openai/gpt-oss-20b`) | **fastembed** `BAAI/bge-small-en-v1.5`, in-process on CPU | Render free tier or any small server |
 | **Local** | **Ollama** `llama3.1:8b` | **Ollama** `nomic-embed-text` | Fully offline, private use |
 
 Switch modes with `LLM_PROVIDER` and `EMBEDDING_PROVIDER`; see [Providers](#providers).
@@ -142,7 +142,7 @@ There are 24 sources: 18 from PPFAS (AMC) and 6 from AMFI. The registry is [`dat
 
 ### Why Groq, fastembed and Ollama
 
-- **Groq** runs the same Llama 3.1 8B model family as the local setup, so the prompt and validation behave the same. It is fast (about 1 s per answer) and has a free developer tier. It needs only an API key and no GPU, so it fits Render's free plan.
+- **Groq** serves `openai/gpt-oss-20b` on its free developer tier (Llama models now need an enterprise plan). It is fast (about 1 s per answer) and has a free developer tier. It needs only an API key and no GPU, so it fits Render's free plan.
 - **fastembed** runs `bge-small-en-v1.5` through ONNX Runtime inside the backend process, using about 150 MB RAM and no API key. Questions are embedded on your own server, and no cloud embedding API is used.
 - **Ollama (local mode)** keeps everything on your machine: questions never leave it. It uses a simple HTTP API (`/api/chat`, `/api/embed`) called with `httpx`.
 - Models are always set by environment variables, never hard-coded.
@@ -309,7 +309,7 @@ cp backend/.env.example backend/.env
 | `LLM_PROVIDER` | `groq` | `groq` or `ollama` |
 | `EMBEDDING_PROVIDER` | `fastembed` | `fastembed` or `ollama` (re-ingest after changing) |
 | `GROQ_API_KEY` | *(empty)* | Groq key (secret) |
-| `GROQ_MODEL` | `llama-3.1-8b-instant` | Groq chat model |
+| `GROQ_MODEL` | `openai/gpt-oss-20b` | Groq chat model (must be enabled for your key; Llama models are enterprise-only on Groq) |
 | `FASTEMBED_MODEL` | `BAAI/bge-small-en-v1.5` | CPU embedding model |
 | `RATE_LIMIT_PER_MINUTE` | `12` | Chat requests per visitor per minute (0 = off) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server |

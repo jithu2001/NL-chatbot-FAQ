@@ -55,3 +55,28 @@ def test_server_error_and_missing_key(monkeypatch):
     _use_transport(monkeypatch, lambda request: httpx.Response(200), api_key="")
     with pytest.raises(LLMUnavailableError):
         asyncio.run(groq_client.chat("sys", "q"))
+
+
+def test_gpt_oss_gets_reasoning_params(monkeypatch):
+    seen = {}
+
+    def handler(request):
+        import json
+
+        seen.update(json.loads(request.content))
+        return httpx.Response(200, json={"choices": [{"message": {"content": "OK."}, "finish_reason": "stop"}]})
+
+    _use_transport(monkeypatch, handler)
+    patched = dataclasses.replace(groq_client.get_settings(), groq_model="openai/gpt-oss-20b")
+    monkeypatch.setattr(groq_client, "get_settings", lambda: patched)
+    asyncio.run(groq_client.chat("sys", "q"))
+    assert seen["reasoning_effort"] == "low" and seen["include_reasoning"] is False
+
+
+def test_health_false_when_model_not_available(monkeypatch):
+    groq_client._health_cache = None
+    _use_transport(monkeypatch, lambda request: httpx.Response(200, json={"data": [{"id": "openai/gpt-oss-20b"}]}))
+    patched = dataclasses.replace(groq_client.get_settings(), groq_model="llama-3.1-8b-instant")
+    monkeypatch.setattr(groq_client, "get_settings", lambda: patched)
+    assert asyncio.run(groq_client.is_available()) is False
+    groq_client._health_cache = None

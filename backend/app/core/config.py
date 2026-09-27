@@ -29,7 +29,7 @@ _DEFAULTS: dict[str, str] = {
     "LLM_PROVIDER": "groq",
     "EMBEDDING_PROVIDER": "fastembed",
     "GROQ_API_KEY": "",
-    "GROQ_MODEL": "llama-3.1-8b-instant",
+    "GROQ_MODEL": "openai/gpt-oss-20b",
     "GROQ_BASE_URL": "https://api.groq.com/openai/v1",
     "FASTEMBED_MODEL": "BAAI/bge-small-en-v1.5",
     "FASTEMBED_CACHE_DIR": "",
