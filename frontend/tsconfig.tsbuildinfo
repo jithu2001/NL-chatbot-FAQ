@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/api/chat.ts","./src/components/ChatInput.tsx","./src/components/ChatMessage.tsx","./src/components/Disclaimer.tsx","./src/components/ExampleQuestions.tsx","./src/components/HealthStatus.tsx","./src/components/SourceCitation.tsx","./vite.config.ts"],"errors":true,"version":"5.8.3"}

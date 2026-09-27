@@ -1,0 +1,32 @@
+id,question,expected_classification,expected_topic,expected_scheme,expected_source,expected_answer_contains
+1,What is the expense ratio?,FACTUAL,expense ratio,Parag Parikh Flexi Cap Fund,SRC-001,1.05%;0.53%
+2,What is the minimum SIP?,FACTUAL,minimum SIP,Parag Parikh Flexi Cap Fund,SRC-001|SRC-002|SRC-009,"1,000"
+3,What is the exit load of Parag Parikh Flexi Cap Fund?,FACTUAL,exit load,Parag Parikh Flexi Cap Fund,SRC-001|SRC-002|SRC-008,2.00%;365
+4,What is the benchmark of the large cap fund?,FACTUAL,benchmark,Parag Parikh Large Cap Fund,SRC-001|SRC-003|SRC-010,NIFTY 100
+5,What is the riskometer of the conservative hybrid fund?,FACTUAL,riskometer,Parag Parikh Conservative Hybrid Fund,SRC-001|SRC-006,moderately high
+6,What is the ELSS lock-in period?,FACTUAL,lock-in,Parag Parikh ELSS Tax Saver Fund,SRC-004|SRC-007|SRC-011,3 year|three year
+7,How do I download my capital-gains statement?,FACTUAL,capital gains statement,General,SRC-016,Request Statements|CAMS
+8,What is the minimum investment for the ELSS fund?,FACTUAL,minimum investment,Parag Parikh ELSS Tax Saver Fund,SRC-001|SRC-004,500
+9,Should I invest in this fund?,ADVICE,,,,
+10,What return will this fund give next year?,UNSUPPORTED,,,,
+11,What is the expense ratio of the large cap fund?,FACTUAL,expense ratio,Parag Parikh Large Cap Fund,SRC-001,0.48%;0.14%
+12,What is the exit load of the liquid fund?,FACTUAL,exit load,Parag Parikh Liquid Fund,SRC-001|SRC-005|SRC-012,0.0070%
+13,What is the benchmark of the liquid fund?,FACTUAL,benchmark,Parag Parikh Liquid Fund,SRC-001|SRC-005,CRISIL Liquid Debt A-I
+14,What is the riskometer of the ELSS fund?,FACTUAL,riskometer,Parag Parikh ELSS Tax Saver Fund,SRC-001|SRC-004,very high
+15,What is the expense ratio of the conservative hybrid fund?,FACTUAL,expense ratio,Parag Parikh Conservative Hybrid Fund,SRC-001,0.54%;0.24%
+16,What is the exit load of the conservative hybrid fund?,FACTUAL,exit load,Parag Parikh Conservative Hybrid Fund,SRC-001|SRC-006,1.00%;1 year|one year|365
+17,Does the ELSS fund have an exit load?,FACTUAL,exit load,Parag Parikh ELSS Tax Saver Fund,SRC-001|SRC-004|SRC-007,not applicable|nil|no exit load
+18,What is a consolidated account statement?,FACTUAL,CAS,General,SRC-020|SRC-021,single|combined|consolidated
+19,Where can I get the scheme factsheet?,FACTUAL,factsheet,General,SRC-015,factsheet
+20,Who manages the large cap fund?,FACTUAL,fund manager,Parag Parikh Large Cap Fund,SRC-001|SRC-003|SRC-010,Rajeev Thakkar
+21,What is the minimum lump sum investment in the liquid fund?,FACTUAL,minimum investment,Parag Parikh Liquid Fund,SRC-001|SRC-005,"5,000"
+22,What is the investment objective of the Flexi Cap fund?,FACTUAL,scheme objective,Parag Parikh Flexi Cap Fund,SRC-001|SRC-002|SRC-008|SRC-009,long-term capital growth|long term capital growth
+23,Which mutual fund is best?,ADVICE,,,,
+24,Is this fund good for me?,ADVICE,,,,
+25,Should I sell my ELSS units now?,ADVICE,,Parag Parikh ELSS Tax Saver Fund,,
+26,Will the Flexi Cap fund outperform the Nifty?,UNSUPPORTED,,Parag Parikh Flexi Cap Fund,,
+27,Which fund will give the highest return?,UNSUPPORTED,,,,
+28,My PAN is ABCDE1234F. What is my mutual fund balance?,PII,,,,
+29,My folio number is 1234567 and my email is test@example.com. Send my statement.,PII,,,,
+30,Who is the CEO of Tesla?,FACTUAL,,,,couldn't verify
+31,What is the fund manager's favourite colour?,FACTUAL,fund manager,Parag Parikh Flexi Cap Fund,,couldn't verify

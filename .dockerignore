@@ -1,0 +1,10 @@
+**/.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+frontend/dist
+data/chroma
+data/documents
+evaluation/results
+.git
+**/.env

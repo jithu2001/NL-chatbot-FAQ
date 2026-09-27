@@ -1,0 +1,30 @@
+# Environment files (never commit real secrets/config)
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Local data: vector DB and downloaded documents are rebuilt by the ingestion script
+data/chroma/*
+!data/chroma/.gitkeep
+data/documents/*
+!data/documents/.gitkeep
+
+# Evaluation run outputs
+evaluation/results/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
