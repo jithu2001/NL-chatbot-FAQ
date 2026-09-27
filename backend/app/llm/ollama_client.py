@@ -7,8 +7,10 @@ import httpx
 from app.core.config import get_settings
 
 
-class OllamaUnavailableError(RuntimeError):
-    """Raised when the local Ollama server cannot be reached or fails."""
+from app.llm.errors import LLMUnavailableError
+
+# Kept as an alias so callers can catch provider-agnostic errors.
+OllamaUnavailableError = LLMUnavailableError
 
 
 def _base() -> str:

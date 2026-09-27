@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Run the evaluation set (evaluation/sample_qa.csv) against the live pipeline.
 
-Requires Ollama running and the index built (python scripts/ingest_sources.py).
+Requires the configured LLM (Groq key or Ollama) and the index built
+(python scripts/ingest_sources.py).
 
     python evaluation/run_eval.py              # prints a summary, writes evaluation/results/
     python evaluation/run_eval.py --ids 1 6 11 # run a subset
@@ -12,7 +13,7 @@ Metrics
   citation        the cited source is one of the expected sources
   answer          every expected fact (";"-separated, "|" = alternatives) is in the answer
   grounded        every number in the answer appears on the cited source page(s)
-  refusal         advice / unsupported / PII questions got the safe response, no Ollama call
+  refusal         advice / unsupported / PII questions got the safe response, no LLM call
 """
 
 from __future__ import annotations
@@ -64,13 +65,13 @@ def _cited_text(source_id: str, page: int | None) -> str:
 
 async def evaluate(rows: list[dict]) -> list[dict]:
     calls = {"n": 0}
-    original_chat = answer_pipeline.ollama_client.chat
+    original_chat = answer_pipeline.provider.chat
 
     async def counting_chat(*a, **kw):
         calls["n"] += 1
         return await original_chat(*a, **kw)
 
-    answer_pipeline.ollama_client.chat = counting_chat
+    answer_pipeline.provider.chat = counting_chat
     results = []
     for row in rows:
         calls["n"] = 0
@@ -109,7 +110,7 @@ async def evaluate(rows: list[dict]) -> list[dict]:
         results.append(out)
         print(f"[{row['id']:>2}] {'OK ' if out['classification_ok'] else 'CLS'} "
               f"{resp.classification:<11} {latency:5.1f}s  {resp.answer[:90]}")
-    answer_pipeline.ollama_client.chat = original_chat
+    answer_pipeline.provider.chat = original_chat
     return results
 
 

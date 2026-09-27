@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.chat import router
 from app.core.config import get_settings
-from app.llm.ollama_client import warm_up
+from app.llm.provider import warm_up
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)  # keep request details out of logs
@@ -60,3 +60,18 @@ async def _unhandled(_: Request, exc: Exception) -> JSONResponse:
 
 
 app.include_router(router)
+
+# Optionally serve the built React app (single-service deploys such as Render).
+_frontend = get_settings().serve_frontend_dir
+if _frontend and (_frontend / "index.html").is_file():
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/assets", StaticFiles(directory=_frontend / "assets"), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    async def spa(path: str) -> FileResponse:
+        candidate = (_frontend / path).resolve()
+        if path and candidate.is_file() and _frontend.resolve() in candidate.parents:
+            return FileResponse(candidate)
+        return FileResponse(_frontend / "index.html")

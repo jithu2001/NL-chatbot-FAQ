@@ -51,7 +51,7 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    ollama: bool
+    llm: bool
     chromadb: bool
 
 

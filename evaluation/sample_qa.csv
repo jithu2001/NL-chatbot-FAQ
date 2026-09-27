@@ -15,7 +15,7 @@ id,question,expected_classification,expected_topic,expected_scheme,expected_sour
 14,What is the riskometer of the ELSS fund?,FACTUAL,riskometer,Parag Parikh ELSS Tax Saver Fund,SRC-001|SRC-004,very high
 15,What is the expense ratio of the conservative hybrid fund?,FACTUAL,expense ratio,Parag Parikh Conservative Hybrid Fund,SRC-001,0.54%;0.24%
 16,What is the exit load of the conservative hybrid fund?,FACTUAL,exit load,Parag Parikh Conservative Hybrid Fund,SRC-001|SRC-006,1.00%;1 year|one year|365
-17,Does the ELSS fund have an exit load?,FACTUAL,exit load,Parag Parikh ELSS Tax Saver Fund,SRC-001|SRC-004|SRC-007,not applicable|nil|no exit load
+17,Does the ELSS fund have an exit load?,FACTUAL,exit load,Parag Parikh ELSS Tax Saver Fund,SRC-001|SRC-004|SRC-007,not applicable|nil|no exit load|not charge
 18,What is a consolidated account statement?,FACTUAL,CAS,General,SRC-020|SRC-021,single|combined|consolidated
 19,Where can I get the scheme factsheet?,FACTUAL,factsheet,General,SRC-015,factsheet
 20,Who manages the large cap fund?,FACTUAL,fund manager,Parag Parikh Large Cap Fund,SRC-001|SRC-003|SRC-010,Rajeev Thakkar

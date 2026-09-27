@@ -16,8 +16,7 @@ node_modules/
 frontend/dist/
 
 # Local data: vector DB and downloaded documents are rebuilt by the ingestion script
-data/chroma/*
-!data/chroma/.gitkeep
+# data/chroma is committed: the prebuilt index ships with the Render image
 data/documents/*
 !data/documents/.gitkeep
 

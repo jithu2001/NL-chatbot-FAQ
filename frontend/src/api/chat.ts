@@ -24,7 +24,7 @@ export interface ChatResponse {
 
 export interface HealthResponse {
   status: "ok" | "degraded";
-  ollama: boolean;
+  llm: boolean;
   chromadb: boolean;
 }
 

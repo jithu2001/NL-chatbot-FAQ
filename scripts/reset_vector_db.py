@@ -23,7 +23,7 @@ def main() -> int:
     args = parser.parse_args()
 
     settings = get_settings()
-    before = vector_store.count()
+    before = vector_store.stored_count_any_model()
     if not args.yes:
         reply = input(f"Delete all {before} chunks in collection '{settings.collection_name}'? [y/N] ")
         if reply.strip().lower() not in {"y", "yes"}:

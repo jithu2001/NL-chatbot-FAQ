@@ -5,7 +5,30 @@
 **Dataset:** [`sample_qa.csv`](sample_qa.csv), 31 questions
 **Runner:** `python evaluation/run_eval.py` (writes `evaluation/results/latest.csv` and `summary.json`)
 
-## Results
+## Hosted mode results (Groq + fastembed, the Render configuration)
+
+**Setup:** `LLM_PROVIDER=groq` with `llama-3.1-8b-instant`, and `EMBEDDING_PROVIDER=fastembed` with `BAAI/bge-small-en-v1.5` (384-dim). There are 1,513 chunks of about 350 tokens, with neighbour-chunk expansion at answer time.
+
+**How the LLM was run:** the Groq client code path was exercised end to end against an OpenAI-compatible endpoint serving the same Llama 3.1 8B model (Ollama's `/v1`), because no Groq key was available at build time. Re-run `python evaluation/run_eval.py` with a real `GROQ_API_KEY` to confirm against Groq itself.
+
+| Metric | Hosted mode | Local mode (below) |
+|---|---|---|
+| Classification | 31/31 | 31/31 |
+| Retrieval hit@5 | 20/20 | 20/20 |
+| Citation accuracy | 20/20 | 20/20 |
+| Answer correctness | **21/22** | 22/22 |
+| Grounded numbers | 20/20 | 20/20 |
+| Refusals without an LLM call | 9/9 | 9/9 |
+| Median latency | 1.6 s | 1.9 s |
+
+**Notes on the hosted run:**
+
+- The one miss is Q17, *"Does the ELSS fund have an exit load?"*. It is flaky. Asked on its own, it answers correctly every time ("does not charge an exit load"). In the full sequential run it sometimes returns "I couldn't verify…". That is a safe failure: the assistant declines rather than stating a wrong fact.
+- **Fixed during migration:** with the smaller bge-small chunks, the ELSS ₹500 minimum and the first fund manager's name sat in the chunk next to the retrieved one. The fix was to add neighbouring chunks from the same page to the top 3 hits.
+- **Relevance separation held with bge-small.** Answerable questions scored 0.86–0.91 and off-topic ones 0.23–0.57, so `RELEVANCE_THRESHOLD=0.70` was kept.
+- **Render limits:** the Docker image was run under `--memory=512m --cpus=0.1`. It used about 291 MB with no out-of-memory kills, served the UI and health check, and answered in 3–4 s after a cold first answer of about 13 s.
+
+## Local mode results (Ollama: llama3.1:8b + nomic-embed-text)
 
 | Metric | Result | How it is measured |
 |---|---|---|

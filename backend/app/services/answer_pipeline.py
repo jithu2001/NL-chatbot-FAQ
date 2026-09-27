@@ -1,10 +1,10 @@
 """The end-to-end answer pipeline.
 
 Question -> PII check -> classification -> retrieval -> relevance check
--> context construction -> Ollama -> answer validation -> citation
+-> context construction -> LLM (Groq or Ollama) -> answer validation -> citation
 attachment -> response.
 
-Ollama only ever produces answer text. The source shown to the user is
+The LLM only ever produces answer text. The source shown to the user is
 always chosen by this module from ChromaDB metadata / the source registry.
 """
 
@@ -17,7 +17,7 @@ from app.classifier.question_classifier import REASON_PREDICTION, Classification
 from app.core.catalog import detect_scheme
 from app.core.config import get_settings
 from app.core.sources import Source, find_source, registry
-from app.llm import ollama_client
+from app.llm import provider
 from app.models.schemas import ChatResponse, SourceInfo
 from app.prompts.system_prompt import NOT_VERIFIED_MESSAGE, build_system_prompt
 from app.rag import vector_store
@@ -90,19 +90,49 @@ def _strip_chunk_header(text: str) -> str:
     return body if sep and head.startswith("Document:") else text
 
 
-def build_context(chunks: list[ScoredChunk]) -> str:
+EXPAND_TOP_N = 3  # top hits that get their neighbouring chunks added ("small-to-big")
+
+
+def expand_with_neighbors(chunks: list[ScoredChunk]) -> dict[str, str]:
+    """Return chunk id -> body text, where the top hits include the adjacent
+    chunks from the same page. Small chunks retrieve precisely; the neighbours
+    restore facts split across a chunk boundary (e.g. a list of fund managers).
+    Chunks swallowed into a neighbour's window are dropped."""
+    bodies: dict[str, str] = {}
+    covered: set[str] = set()
+    for rank, c in enumerate(chunks):
+        if c.chunk.id in covered:
+            continue
+        body = _strip_chunk_header(c.text)
+        if rank < EXPAND_TOP_N:
+            neighbors = vector_store.get_neighbors(c.metadata)
+            if neighbors:
+                index = c.metadata["chunk_index"]
+                pieces = {**{i: _strip_chunk_header(t) for i, t in neighbors.items()}, index: body}
+                body = "\n".join(pieces[i] for i in sorted(pieces))
+                source_id = c.metadata["source_id"]
+                covered.update(f"{source_id}-chunk-{i:04d}" for i in pieces)
+        covered.add(c.chunk.id)
+        bodies[c.chunk.id] = body
+    return bodies
+
+
+def build_context(chunks: list[ScoredChunk], bodies: dict[str, str] | None = None) -> str:
     parts = []
-    for i, c in enumerate(chunks, 1):
+    for c in chunks:
+        if bodies is not None and c.chunk.id not in bodies:
+            continue
         m = c.metadata
-        label = f"[{i}] {m.get('title')} | Scheme: {m.get('scheme')}"
+        label = f"[{len(parts) + 1}] {m.get('title')} | Scheme: {m.get('scheme')}"
         if m.get("page"):
             label += f" | Page {m['page']}"
         label += f" | Last updated: {m.get('last_updated', 'Not specified')}"
-        parts.append(f"{label}\n{_strip_chunk_header(c.text)}")
+        body = bodies[c.chunk.id] if bodies is not None else _strip_chunk_header(c.text)
+        parts.append(f"{label}\n{body}")
     return "\n\n---\n\n".join(parts)
 
 
-def select_source(chunks: list[ScoredChunk], answer: str) -> ScoredChunk:
+def select_source(chunks: list[ScoredChunk], answer: str, bodies: dict[str, str] | None = None) -> ScoredChunk:
     """Pick the single chunk that best supports the generated answer.
 
     Criteria: retrieval rank (relevance + authority/scheme preference), how
@@ -112,15 +142,17 @@ def select_source(chunks: list[ScoredChunk], answer: str) -> ScoredChunk:
     answer_numbers = numbers_in(answer)
     answer_terms = key_terms(answer)
 
+    candidates = [c for c in chunks if bodies is None or c.chunk.id in bodies]
+
     def score(c: ScoredChunk) -> tuple[float, str]:
-        body = _strip_chunk_header(c.text)
+        body = bodies[c.chunk.id] if bodies is not None else _strip_chunk_header(c.text)
         num_support = (len(answer_numbers & numbers_in(body)) / len(answer_numbers)) if answer_numbers else 0.0
         overlap = lexical_coverage(answer_terms, body) if answer_terms else 0.0
         recency = c.metadata.get("last_updated", "")
         recency = recency if re.fullmatch(r"\d{4}-\d{2}-\d{2}", recency) else "0000-00-00"
         return (c.rank_score + 0.35 * num_support + 0.35 * overlap, recency)
 
-    return max(chunks, key=score)
+    return max(candidates or chunks, key=score)
 
 
 def _advice_source(scheme: str | None) -> SourceInfo | None:
@@ -184,15 +216,16 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
         # when it has relevant passages (avoids stale KIM/SID values).
         latest = [c for c in context_chunks if c.metadata.get("source_type") in topic.preferred_source_types]
         context_chunks = latest or context_chunks
-    context = build_context(context_chunks)
+    bodies = expand_with_neighbors(context_chunks)
+    context = build_context(context_chunks, bodies)
 
     llm_question = _question_for_llm(result)
-    raw = await ollama_client.chat(system=build_system_prompt(llm_question, context), user=llm_question)
+    raw = await provider.chat(system=build_system_prompt(llm_question, context), user=llm_question)
     validation = validate_answer(raw, context, question)
     log.info("answer validation verdict: %s", validation.verdict.value)
 
     if validation.verdict is Verdict.OK:
-        best = select_source(context_chunks, validation.answer)
+        best = select_source(context_chunks, validation.answer, bodies)
         return _response(validation.answer, Classification.FACTUAL, _source_from_meta(best.metadata),
                          scheme=result.scheme, defaulted=result.scheme_was_defaulted)
 

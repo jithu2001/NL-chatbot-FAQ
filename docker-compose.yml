@@ -1,57 +1,12 @@
-# PowerUp Money - Mutual Fund FAQ Assistant
-#
-# Default: uses the Ollama already running on your host (http://localhost:11434).
-# On Linux the host Ollama must listen on all interfaces (OLLAMA_HOST=0.0.0.0) to be
-# reachable from containers - see README "Docker (optional)".
-#   docker compose up --build
-#   docker compose run --rm backend python /app/scripts/ingest_sources.py   # build the index (first run)
-#   open http://localhost:8080
-#
-# Optional: run Ollama in a container too (GPU needs the NVIDIA Container Toolkit):
-#   OLLAMA_BASE_URL=http://ollama:11434 docker compose --profile ollama up --build
-#   docker compose exec ollama ollama pull llama3.1:8b
-#   docker compose exec ollama ollama pull nomic-embed-text
-
+# Same image as Render, run locally:  docker compose up --build  ->  http://localhost:8080
+# Put GROQ_API_KEY in backend/.env (never commit it).
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+  app:
+    build: .
+    env_file:
+      - path: backend/.env
+        required: false
     environment:
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
-      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
-      TOP_K: ${TOP_K:-5}
-      RELEVANCE_THRESHOLD: ${RELEVANCE_THRESHOLD:-0.70}
-      CORS_ORIGINS: http://localhost:8080
-    volumes:
-      - ./data:/app/data            # sources.csv, downloaded documents, persistent ChromaDB
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      PORT: "8000"
     ports:
-      - "8000:8000"
-
-  frontend:
-    build: ./frontend
-    depends_on:
-      - backend
-    ports:
-      - "8080:80"
-
-  ollama:
-    image: ollama/ollama:latest
-    profiles: ["ollama"]
-    volumes:
-      - ollama:/root/.ollama
-    ports:
-      - "11434:11434"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-volumes:
-  ollama:
+      - "8080:8000"

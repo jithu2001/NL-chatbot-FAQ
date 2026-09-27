@@ -19,10 +19,10 @@ import httpx
 from app.core.catalog import find_scheme_in_text
 from app.core.config import get_settings
 from app.core.sources import Source, load_sources
-from app.llm.ollama_client import OllamaUnavailableError
+from app.llm.errors import LLMUnavailableError
 from app.rag import vector_store
-from app.rag.chunker import CHUNK_OVERLAP_TOKENS, CHUNK_SIZE_TOKENS, CHUNKER_VERSION, chunk_text
-from app.rag.embeddings import embed_documents
+from app.rag.chunker import CHUNKER_VERSION, chunk_text
+from app.rag.embeddings import embed_documents, use_all_cores
 from app.rag.extractors import PageText, extract_html, extract_pdf
 
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) PowerUpMoney-FAQ-Ingest/1.0 (+official-sources-only)"
@@ -86,7 +86,8 @@ def build_chunks(src: Source, pages: list[PageText], content_hash: str) -> list[
         header = f"Document: {src.title}\nScheme: {scheme}"
         if page.page is not None:
             header += f"\nPage: {page.page}"
-        for piece in chunk_text(page.text):
+        settings = get_settings()
+        for piece in chunk_text(page.text, settings.chunk_size_tokens, settings.chunk_overlap_tokens):
             n = len(chunks) + 1
             meta = src.metadata() | {"scheme": scheme, "chunk_index": n, "content_hash": content_hash}
             if page.page is not None:
@@ -108,8 +109,8 @@ def ingest_source(src: Source, *, refresh: bool = False, force: bool = False, lo
     # Fingerprint = extracted text + chunking settings + embedding model, so a
     # change to any of them triggers re-indexing of this source.
     fingerprint = "\n".join(p.text for p in pages) + (
-        f"|chunker={CHUNKER_VERSION}:{CHUNK_SIZE_TOKENS}:{CHUNK_OVERLAP_TOKENS}"
-        f"|embed={get_settings().ollama_embed_model}")
+        f"|chunker={CHUNKER_VERSION}:{get_settings().chunk_size_tokens}:{get_settings().chunk_overlap_tokens}"
+        f"|embed={get_settings().embedding_model_id}")
     content_hash = hashlib.sha256(fingerprint.encode()).hexdigest()[:16]
     chunks = build_chunks(src, pages, content_hash)
     log(f"✓ {len(chunks)} chunks")
@@ -140,6 +141,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--only", nargs="*", metavar="SOURCE_ID", help="ingest only these source IDs")
     args = parser.parse_args(argv)
 
+    settings = get_settings()
+    use_all_cores()
+    try:
+        vector_store.get_collection()
+    except vector_store.EmbeddingModelMismatchError:
+        # The index belongs to another embedding model: vectors are not comparable.
+        print(f"Embedding model changed to '{settings.embedding_model_id}' - rebuilding the collection.")
+        vector_store.reset_collection()
+    print(f"Embedding model: {settings.embedding_model_id} (chunks ~{settings.chunk_size_tokens} tokens)")
     print("Loading source registry...")
     sources = load_sources()
     if args.only:
@@ -153,8 +163,8 @@ def main(argv: list[str] | None = None) -> int:
         try:
             total_chunks += ingest_source(src, refresh=args.refresh, force=args.force, log=lambda m: print("  " + m))
             ok += 1
-        except OllamaUnavailableError as exc:
-            print(f"  ✗ Ollama error: {exc}\n\nIs Ollama running and is '{get_settings().ollama_embed_model}' pulled?")
+        except LLMUnavailableError as exc:
+            print(f"  ✗ Embedding error: {exc}\n\nIs Ollama running and is '{get_settings().ollama_embed_model}' pulled?")
             return 2
         except Exception as exc:  # noqa: BLE001 - report and continue with other sources
             print(f"  ✗ Skipped: {type(exc).__name__}: {exc}")

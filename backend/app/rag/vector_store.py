@@ -45,17 +45,32 @@ def get_client() -> chromadb.ClientAPI:
     return _client
 
 
+class EmbeddingModelMismatchError(VectorStoreUnavailableError):
+    """The index was built with a different embedding model than configured."""
+
+
 def get_collection():
+    settings = get_settings()
+    client = get_client()
     try:
-        return get_client().get_or_create_collection(
-            name=get_settings().collection_name,
-            metadata={"hnsw:space": "cosine"},
-            embedding_function=None,
-        )
-    except VectorStoreUnavailableError:
-        raise
+        try:
+            collection = client.get_collection(settings.collection_name, embedding_function=None)
+        except Exception:  # noqa: BLE001 - does not exist yet
+            return client.create_collection(
+                name=settings.collection_name,
+                metadata={"hnsw:space": "cosine", "embedding_model": settings.embedding_model_id},
+                embedding_function=None,
+            )
+        stored = (collection.metadata or {}).get("embedding_model")
+        if stored is None and collection.count() > 0:
+            stored = "ollama:nomic-embed-text"  # indexes built before the model was recorded
     except Exception as exc:  # noqa: BLE001
         raise VectorStoreUnavailableError("Could not open collection") from exc
+    if stored and stored != settings.embedding_model_id:
+        raise EmbeddingModelMismatchError(
+            f"Index was built with '{stored}' but '{settings.embedding_model_id}' is configured. "
+            "Run: python scripts/reset_vector_db.py --yes && python scripts/ingest_sources.py")
+    return collection
 
 
 def upsert_chunks(ids: list[str], documents: list[str], embeddings: list[list[float]],
@@ -98,6 +113,20 @@ def query(embedding: list[float], top_k: int, where: dict[str, Any] | None = Non
     return chunks
 
 
+def get_neighbors(meta: dict[str, Any], window: int = 1) -> dict[int, str]:
+    """Texts of the chunks next to a chunk (same source and page), keyed by chunk_index."""
+    source_id, index = meta.get("source_id"), meta.get("chunk_index")
+    if not source_id or not isinstance(index, int):
+        return {}
+    ids = [f"{source_id}-chunk-{n:04d}" for n in range(index - window, index + window + 1) if n > 0 and n != index]
+    res = get_collection().get(ids=ids, include=["documents", "metadatas"])
+    out: dict[int, str] = {}
+    for doc, m in zip(res.get("documents") or [], res.get("metadatas") or [], strict=True):
+        if m and m.get("page") == meta.get("page"):
+            out[int(m["chunk_index"])] = doc or ""
+    return out
+
+
 def reset_collection() -> None:
     client = get_client()
     name = get_settings().collection_name
@@ -105,6 +134,15 @@ def reset_collection() -> None:
     if name in existing:
         client.delete_collection(name)
     get_collection()
+
+
+def stored_count_any_model() -> int:
+    """Chunk count without the embedding-model check (for the reset script)."""
+    name = get_settings().collection_name
+    try:
+        return get_client().get_collection(name).count()
+    except Exception:  # noqa: BLE001 - collection may not exist
+        return 0
 
 
 def is_available() -> bool:

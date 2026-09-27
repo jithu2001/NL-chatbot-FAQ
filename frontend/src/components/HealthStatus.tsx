@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getHealth, type HealthResponse } from "../api/chat";
 
-/** Small development-only indicator for Ollama and the knowledge base. */
+/** Small development-only indicator for the AI model and the knowledge base. */
 export default function HealthStatus() {
   const [health, setHealth] = useState<HealthResponse | null | undefined>(undefined);
 
@@ -27,7 +27,7 @@ export default function HealthStatus() {
     <p className="hidden gap-3 text-[11px] text-slate-400 sm:flex dark:text-slate-500" title="Development status">
       {health ? (
         <>
-          {item("Ollama", health.ollama)}
+          {item("AI model", health.llm)}
           {item("Knowledge Base", health.chromadb)}
         </>
       ) : (
