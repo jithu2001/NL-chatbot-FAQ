@@ -9,7 +9,7 @@ PROHIBITED = ("groww", "zerodha", "moneycontrol", "etmoney", "bankbazaar", "wiki
 
 def test_registry_is_valid_and_official():
     sources = load_sources()
-    assert 15 <= len(sources) <= 25
+    assert 15 <= len(sources) <= 40
     assert {s.authority for s in sources} <= {"AMC", "AMFI", "SEBI"}
     for s in sources:
         assert not any(p in s.url.lower() for p in PROHIBITED)

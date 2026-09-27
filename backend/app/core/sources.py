@@ -29,7 +29,7 @@ REQUIRED_COLUMNS = (
 
 # Only official domains are accepted into the registry.
 ALLOWED_DOMAINS = {
-    "AMC": ("amc.ppfas.com",),
+    "AMC": ("amc.ppfas.com", "www.hdfcfund.com", "hdfcfund.com", "files.hdfcfund.com"),
     "AMFI": ("www.amfiindia.com", "amfiindia.com", "portal.amfiindia.com"),
     "SEBI": ("www.sebi.gov.in", "sebi.gov.in", "investor.sebi.gov.in"),
 }

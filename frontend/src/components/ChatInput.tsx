@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import type { SchemeInfo } from "../api/chat";
+import { groupByAmc, type SchemeInfo } from "../api/chat";
 
 const MAX_LENGTH = 500;
 
@@ -51,10 +51,14 @@ export default function ChatInput({ onSubmit, disabled, schemes, scheme, onSchem
             className="min-w-0 max-w-full flex-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 sm:flex-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-brand-500/30"
           >
             <option value="">Auto (detect from question)</option>
-            {schemes.map((s) => (
-              <option key={s.name} value={s.name}>
-                {s.name} — {s.category}
-              </option>
+            {groupByAmc(schemes).map(([amc, list]) => (
+              <optgroup key={amc} label={amc}>
+                {list.map((s) => (
+                  <option key={s.name} value={s.name}>
+                    {s.name} — {s.category}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>

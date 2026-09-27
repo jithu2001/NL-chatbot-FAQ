@@ -25,7 +25,10 @@ function AssistantCard({ response }: { response: ChatResponse }) {
       {response.scheme && response.classification === "FACTUAL" && (
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
           Scheme: <span className="font-medium text-slate-700 dark:text-slate-200">{response.scheme}</span>
-          {response.scheme_defaulted && " (no scheme named — name a scheme or pick one below to ask about another)"}
+          {response.scheme_defaulted &&
+            (response.other_schemes?.length
+              ? ` (also matches ${response.other_schemes.join(", ")} — name the fund house or pick it in the Scheme menu)`
+              : " (no scheme named — name a scheme or pick one below to ask about another)")}
         </p>
       )}
       {response.source && <SourceCitation source={response.source} />}

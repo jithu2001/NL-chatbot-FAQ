@@ -1,6 +1,6 @@
 # PowerUp Money — Mutual Fund FAQ Assistant
 
-A **facts-only** mutual fund FAQ assistant. It answers factual questions about five PPFAS Mutual Fund schemes using **only official public sources** from the AMC and AMFI. Every factual answer includes **exactly one official source link** and the source's official **last-updated date**.
+A **facts-only** mutual fund FAQ assistant. It answers factual questions about ten schemes from two fund houses, **PPFAS Mutual Fund** and **HDFC Mutual Fund**, using **only official public sources** from the AMCs and AMFI. Every factual answer includes **exactly one official source link** and the source's official **last-updated date**.
 
 It has a React UI, a FastAPI backend and a persistent **ChromaDB** vector store, and supports two provider modes:
 
@@ -59,27 +59,41 @@ The project demonstrates three skills:
 - Handle account-specific queries or personal data.
 - Accept user-supplied URLs as sources.
 
-## Selected AMC
+## Selected AMCs
 
-**PPFAS Mutual Fund** (PPFAS Asset Management Pvt. Ltd., SEBI Registration No. MF/069/12/01), website <https://amc.ppfas.com>.
-
-Why PPFAS: its site publishes server-rendered HTML pages and text-based PDFs (factsheet, KIM, SID) that can be ingested reliably and cited page by page. Its schemes span equity, ELSS, debt and hybrid categories.
+| AMC | Website | Why |
+|---|---|---|
+| **PPFAS Mutual Fund** (PPFAS Asset Management Pvt. Ltd., SEBI Reg. No. MF/069/12/01) | <https://amc.ppfas.com> | Server-rendered HTML and text-based factsheet, KIM and SID PDFs that can be cited page by page |
+| **HDFC Mutual Fund** (HDFC Asset Management Company Ltd.) | <https://www.hdfcfund.com> | One of India's largest AMCs. Its monthly factsheet and per-scheme KIMs are text PDFs. It adds a mid-cap fund to the mix. |
 
 ## Selected schemes
 
-| # | Scheme | Category |
-|---|---|---|
-| 1 | Parag Parikh Flexi Cap Fund | Flexi Cap (Equity) |
-| 2 | Parag Parikh Large Cap Fund | Large Cap (Equity) |
-| 3 | Parag Parikh ELSS Tax Saver Fund | ELSS (3-year statutory lock-in) |
-| 4 | Parag Parikh Liquid Fund | Liquid (Debt) |
-| 5 | Parag Parikh Conservative Hybrid Fund | Conservative Hybrid |
+| # | Scheme | AMC | Category |
+|---|---|---|---|
+| 1 | Parag Parikh Flexi Cap Fund | PPFAS | Flexi Cap (Equity) |
+| 2 | Parag Parikh Large Cap Fund | PPFAS | Large Cap (Equity) |
+| 3 | Parag Parikh ELSS Tax Saver Fund | PPFAS | ELSS (3-year statutory lock-in) |
+| 4 | Parag Parikh Liquid Fund | PPFAS | Liquid (Debt) |
+| 5 | Parag Parikh Conservative Hybrid Fund | PPFAS | Conservative Hybrid |
+| 6 | HDFC Flexi Cap Fund | HDFC | Flexi Cap (Equity) |
+| 7 | HDFC Large Cap Fund (formerly HDFC Top 100) | HDFC | Large Cap (Equity) |
+| 8 | HDFC Mid Cap Fund | HDFC | Mid Cap (Equity) |
+| 9 | HDFC ELSS Tax Saver Fund | HDFC | ELSS (3-year statutory lock-in) |
+| 10 | HDFC Liquid Fund | HDFC | Liquid (Debt) |
 
-The monthly factsheet also covers two other PPFAS schemes (Arbitrage, Dynamic Asset Allocation). Ingestion **skips those pages** because they are out of scope.
+The factsheets also cover other schemes (2 more from PPFAS, dozens from HDFC). Ingestion keeps only the pages whose title names one of these ten schemes.
+
+**How questions are matched to a fund house:**
+
+- A **full scheme name** or a unique alias ("HDFC Top 100", "PPFCF") selects that scheme directly.
+- **Category words plus a fund house** ("HDFC flexi cap", "Parag Parikh ELSS") select that AMC's scheme.
+- **A bare category** that both AMCs have ("What is the ELSS lock-in period?") is answered for the primary AMC's scheme (PPFAS, from `DEFAULT_SCHEME`). The answer names the scheme, and the UI shows *"also matches HDFC ELSS Tax Saver Fund — name the fund house or pick it in the Scheme menu"*.
+- **A fund house with no scheme** ("expense ratio of HDFC") uses that AMC's Flexi Cap fund, and the UI says so.
+- **Every chunk carries an `amc` metadata field.** Retrieval filters on it, so one fund house's documents never answer for the other. AMFI pages are tagged `General` and are shared.
 
 ## Official sources
 
-There are 24 sources: 18 from PPFAS (AMC) and 6 from AMFI. The registry is [`data/sources.csv`](data/sources.csv), with columns `source_id, title, scheme, topic, source_type, url, publication_date, last_updated, retrieved_date, authority`.
+There are 33 sources: 18 from PPFAS, 9 from HDFC and 6 from AMFI. The registry is [`data/sources.csv`](data/sources.csv), with columns `source_id, title, scheme, topic, source_type, url, publication_date, last_updated, retrieved_date, authority`.
 
 | ID | Source | Type | Authority | Last updated |
 |---|---|---|---|---|
@@ -107,11 +121,21 @@ There are 24 sources: 18 from PPFAS (AMC) and 6 from AMFI. The registry is [`dat
 | SRC-022 | [AMFI Investor Corner - Investor Service FAQs](https://www.amfiindia.com/investor/become-mf-distributor?zoneName=InvestorService) | AMFI Investor Education | AMFI | Not specified |
 | SRC-023 | [AMFI Investor Corner - Risks in Mutual Funds](https://www.amfiindia.com/investor/knowledge-center-info?zoneName=riskInMutualFunds) | AMFI Investor Education | AMFI | Not specified |
 | SRC-024 | [AMFI Investor Corner - Categorization of Mutual Fund Schemes](https://www.amfiindia.com/investor/knowledge-center-info?zoneName=CategorizationOfMutualFundSchemes) | AMFI Investor Education | AMFI | Not specified |
+| SRC-025 | [HDFC MF Factsheet - August 2026](https://files.hdfcfund.com/s3fs-public/2026-09/HDFC%20MF%20Factsheet%20-%20August%202026.pdf) | AMC Factsheet | AMC | 2026-08-31 |
+| SRC-026 | [Key Information Memorandum - HDFC Flexi Cap Fund](https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20Flexi%20Cap%20Fund%20dated%20November%2021,%202025_1.pdf) | KIM | AMC | 2025-11-21 |
+| SRC-027 | [Key Information Memorandum - HDFC Large Cap Fund](https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20Large%20Cap%20Fund%20dated%20November%2021%2C%202025_0.pdf) | KIM | AMC | 2025-11-21 |
+| SRC-028 | [Key Information Memorandum - HDFC Mid Cap Fund](https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20Mid%20Cap%20Fund%20dated%20November%2021%2C%202025_1.pdf) | KIM | AMC | 2025-11-21 |
+| SRC-029 | [Key Information Memorandum - HDFC ELSS Tax Saver](https://files.hdfcfund.com/s3fs-public/KIM/2025-11/KIM%20-%20HDFC%20ELSS%20Tax%20Saver%20dated%20November%2021%2C%202025_0.pdf) | KIM | AMC | 2025-11-21 |
+| SRC-030 | [Key Information Memorandum - HDFC Liquid Fund](https://files.hdfcfund.com/s3fs-public/KIM/2025-05/KIM%20-%20HDFC%20Liquid%20Fund%20dated%20May%2030,%202025.pdf) | KIM | AMC | 2025-05-30 |
+| SRC-031 | [HDFC Mutual Fund - Request Statement](https://www.hdfcfund.com/services/additional-info/request-statement) | AMC Investor Services | AMC | Not specified |
+| SRC-032 | [HDFC Mutual Fund - How to Get a Capital Gain Statement](https://www.hdfcfund.com/learn/blog/how-get-capital-gain-statement-mutual-fund-schemes-india) | AMC Investor Services | AMC | 2026-07-03 |
+| SRC-033 | [HDFC Mutual Fund - Download Consolidated Account Statement](https://www.hdfcfund.com/services/consolidated-account-statement) | AMC Investor Services | AMC | Not specified |
 
 **Date rules (no dates are invented):**
 
 - `publication_date` / `last_updated` for KIMs and SIDs come from the document's own statement, for example *"This Key Information Memorandum (KIM) is dated November 27, 2025"*.
 - The factsheet's `last_updated` is its printed data date (*"as on August 31, 2026"*). Its publication date is not printed, so it is `Not specified`.
+- HDFC's capital-gain guide states its own dates (*"Last Updated On: 3 Jul 2026 | Created On: 11 Jul 2025"*), which are used as given.
 - Web pages carry no update date, so `last_updated = Not specified`. The UI then shows *"Last updated from sources: Not specified · Source retrieved: 27 September 2026"*.
 - `retrieved_date` is when the document was downloaded.
 
@@ -366,9 +390,9 @@ Example output:
 
 ```text
 Loading source registry...
-24 sources registered
+33 sources registered
 
-[1/24] PPFAS Mutual Fund Factsheet - August 2026  (SRC-001)
+[1/33] PPFAS Mutual Fund Factsheet - August 2026  (SRC-001)
   ✓ Downloaded (PDF, 4130 KB)
   ✓ Extracted 32 page(s), 96,202 characters
   ✓ 35 chunks
@@ -376,8 +400,8 @@ Loading source registry...
   ✓ Added to ChromaDB
 ...
 Ingestion complete.
-24 sources
-1513 chunks
+33 sources
+1854 chunks
 ```
 
 A first run takes a few minutes on CPU with fastembed, or about a minute with Ollama on a GPU. The run is **idempotent**: re-running skips sources whose content, chunking settings and embedding model are unchanged (`✓ Already indexed and unchanged - skipped`). A changed source has its old chunks replaced, never duplicated.
@@ -441,7 +465,7 @@ curl -s -X POST http://localhost:8000/api/chat \
 }
 ```
 
-The request also accepts an optional `"scheme"` (one of the five scheme names), which the UI's scheme selector sends. If the LLM is unreachable, `/api/chat` returns HTTP 503. The message is *"The AI service is currently unavailable…"* in hosted mode, or *"…Please make sure Ollama is running."* in local mode. If Groq's rate limit is hit, the message is *"The assistant is handling many questions right now…"*. If the knowledge base is missing or empty, it returns 503 with *"The knowledge base is currently unavailable. Please try again."*
+The request also accepts an optional `"scheme"` (one of the ten scheme names), which the UI's scheme selector sends. If the LLM is unreachable, `/api/chat` returns HTTP 503. The message is *"The AI service is currently unavailable…"* in hosted mode, or *"…Please make sure Ollama is running."* in local mode. If Groq's rate limit is hit, the message is *"The assistant is handling many questions right now…"*. If the knowledge base is missing or empty, it returns 503 with *"The knowledge base is currently unavailable. Please try again."*
 
 At start-up the backend loads the embedding model in the background, and in local mode the Ollama model too, which takes about 45 s. After that, answers take about 1–3 s.
 
@@ -536,16 +560,16 @@ There are 80 unit tests covering:
 python evaluation/run_eval.py
 ```
 
-These are the latest results on 31 questions; see [`evaluation/README.md`](evaluation/README.md) for methodology and known failures.
+These are the latest results on 42 questions (31 PPFAS/general + 11 HDFC and cross-AMC), in hosted mode; see [`evaluation/README.md`](evaluation/README.md) for methodology and known failures.
 
 | Metric | Result |
 |---|---|
-| Classification accuracy | 31/31 |
-| Retrieval accuracy (hit@5) | 20/20 |
-| Citation accuracy | 20/20 |
-| Answer correctness | 22/22 |
-| Grounded numbers (in cited page) | 20/20 |
-| Refusal accuracy (no LLM call) | 9/9 |
+| Classification accuracy | 42/42 |
+| Retrieval accuracy (hit@5) | 29/29 |
+| Citation accuracy | 29/29 |
+| Answer correctness | 31/31 |
+| Grounded numbers (in cited page) | 29/29 |
+| Refusal accuracy (no LLM call) | 11/11 |
 | Median latency (warm) | 1.9 s |
 
 ## Security and privacy
@@ -556,15 +580,17 @@ These are the latest results on 31 questions; see [`evaluation/README.md`](evalu
 
 ## Known limitations
 
-- **Corpus snapshot.** Factsheet data is as on 31 August 2026; KIMs and SIDs are dated November/December 2025. Update `sources.csv` and re-ingest to refresh.
+- **Corpus snapshot.** Factsheet data is as on 31 August 2026 for both AMCs. KIMs and SIDs are dated May–December 2025 (the HDFC Liquid Fund KIM is dated 30 May 2025).
+- **HDFC riskometers can't be answered.** HDFC prints riskometer levels only as images, in both the factsheet and the KIMs, so there is no text to ingest. Riskometer questions for HDFC schemes return "I couldn't verify…" rather than a guess.
+- **hdfcfund.com uses bot protection (Akamai).** Ingestion sends standard browser request headers to download the registry's official URLs. If HDFC tightens this, downloads may fail. Cached copies in `data/documents/` and the committed index still work. Update `sources.csv` and re-ingest to refresh.
 - **SEBI pages are not in the corpus.** `sebi.gov.in` was unreachable during the TLS handshake from the development network, so the corpus uses AMC and AMFI sources only. The registry and domain allow-list already support SEBI URLs.
 - **One JavaScript-rendered page.** The Large Cap scheme page renders its content with JavaScript, so its SID is indexed instead.
 - **Rule-based classification** is transparent and testable, but unusual phrasings of advice may slip through to retrieval. The post-generation advice guard is the second line of defence.
 - **Non-numeric embellishment** by the LLM (for example "applies to both plans") is not caught automatically; numbers are.
-- **Default scheme.** Questions that name no scheme are answered for the Flexi Cap fund; the answer and the UI say so.
+- **Default scheme and ambiguity.** Questions that name no scheme, or match both AMCs, are answered for the primary AMC's scheme (PPFAS). The UI names the scheme and lists the other matches.
 - **Single-turn.** "This fund" is not resolved from earlier messages. Use the scheme selector or name the scheme.
 - Answers are for **Regular and Direct plans as published**. Account-specific data (holdings, balances, transactions) is out of scope by design.
 
 ## Disclaimer
 
-**Facts-only. No investment advice.** This is a prototype for educational purposes. Information is drawn from publicly available official PPFAS Mutual Fund (AMC) and AMFI documents, and may be out of date. Always verify with the latest official scheme documents at <https://amc.ppfas.com>. Mutual fund investments are subject to market risks; read all scheme-related documents carefully. PowerUp Money is not affiliated with PPFAS Mutual Fund or AMFI.
+**Facts-only. No investment advice.** This is a prototype for educational purposes. Information is drawn from publicly available official PPFAS Mutual Fund and HDFC Mutual Fund (AMC) and AMFI documents, and may be out of date. Always verify with the latest official scheme documents at <https://amc.ppfas.com> or <https://www.hdfcfund.com>. Mutual fund investments are subject to market risks; read all scheme-related documents carefully. PowerUp Money is not affiliated with PPFAS Mutual Fund, HDFC Mutual Fund or AMFI.

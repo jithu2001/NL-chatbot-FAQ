@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ApiError, askQuestion, getSchemes, type SchemeInfo } from "./api/chat";
+import { ApiError, askQuestion, getSchemes, groupByAmc, type SchemeInfo } from "./api/chat";
 import ChatInput from "./components/ChatInput";
 import ChatMessage, { type Message } from "./components/ChatMessage";
 import Disclaimer from "./components/Disclaimer";
@@ -66,19 +66,23 @@ export default function App() {
             <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <p className="leading-relaxed">
                 <span className="font-semibold">Welcome!</span> I answer factual questions about selected{" "}
-                <span className="font-medium">PPFAS Mutual Fund</span> schemes, such as expense ratio, exit load,
+                <span className="font-medium">PPFAS Mutual Fund</span> and{" "}
+                <span className="font-medium">HDFC Mutual Fund</span> schemes, such as expense ratio, exit load,
                 minimum SIP, lock-in, riskometer and benchmark, plus how to get statements. Every answer links to one
                 official source.
               </p>
-              {schemes.length > 0 && (
-                <ul className="flex flex-wrap gap-1.5 text-xs">
-                  {schemes.map((s) => (
-                    <li key={s.name} className="rounded-md bg-slate-100 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                      {s.name}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {groupByAmc(schemes).map(([amc, list]) => (
+                <div key={amc}>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{amc}</p>
+                  <ul className="flex flex-wrap gap-1.5 text-xs">
+                    {list.map((s) => (
+                      <li key={s.name} className="rounded-md bg-slate-100 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        {s.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
               <ExampleQuestions onSelect={ask} disabled={loading} />
             </div>
           )}

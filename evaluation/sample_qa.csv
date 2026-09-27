@@ -30,3 +30,14 @@ id,question,expected_classification,expected_topic,expected_scheme,expected_sour
 29,My folio number is 1234567 and my email is test@example.com. Send my statement.,PII,,,,
 30,Who is the CEO of Tesla?,FACTUAL,,,,couldn't verify
 31,What is the fund manager's favourite colour?,FACTUAL,fund manager,Parag Parikh Flexi Cap Fund,,couldn't verify
+32,What is the expense ratio of HDFC Flexi Cap Fund?,FACTUAL,expense ratio,HDFC Flexi Cap Fund,SRC-025,1.27%;0.67%
+33,What is the exit load of HDFC Flexi Cap Fund?,FACTUAL,exit load,HDFC Flexi Cap Fund,SRC-025|SRC-026,1.00%;1 year|one year|365
+34,What is the benchmark of HDFC Mid Cap Fund?,FACTUAL,benchmark,HDFC Mid Cap Fund,SRC-025|SRC-028,MIDCAP 150
+35,What is the expense ratio of the HDFC Large Cap Fund?,FACTUAL,expense ratio,HDFC Large Cap Fund,SRC-025,1.52%;0.98%
+36,What is the lock-in period of HDFC ELSS Tax Saver?,FACTUAL,lock-in,HDFC ELSS Tax Saver Fund,SRC-029|SRC-025,3 year|three year
+37,What is the expense ratio of HDFC Liquid Fund?,FACTUAL,expense ratio,HDFC Liquid Fund,SRC-025,0.30%;0.20%
+38,What is the benchmark of HDFC Liquid Fund?,FACTUAL,benchmark,HDFC Liquid Fund,SRC-025|SRC-030,CRISIL Liquid Debt A-I
+39,How do I get my HDFC capital gains statement?,FACTUAL,capital gains statement,General,SRC-032|SRC-033|SRC-031,capital gain
+40,What is the expense ratio of HDFC?,FACTUAL,expense ratio,HDFC Flexi Cap Fund,SRC-025,1.27%;0.67%
+41,Should I invest in HDFC Mid Cap Fund?,ADVICE,,HDFC Mid Cap Fund,,
+42,Which is better: HDFC Flexi Cap or Parag Parikh Flexi Cap?,ADVICE,,,,

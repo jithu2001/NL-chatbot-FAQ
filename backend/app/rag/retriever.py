@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from app.core.catalog import Topic, detect_scheme, detect_topic
+from app.core.catalog import AMC_DEFAULT_SCHEME, Topic, amc_of_scheme, detect_amc, detect_topic, scheme_candidates
 from app.core.config import get_settings
 from app.rag import vector_store
 from app.rag.embeddings import embed_query
@@ -35,7 +35,7 @@ _STOPWORDS = set(
     what which who whom whose when where why how do does did can could should would will
     i me my mine we our you your it its this that these those there here any some
     about tell please much many get give show find know need want
-    fund funds scheme schemes mutual parag parikh ppfas mf plan""".split()
+    fund funds scheme schemes mutual parag parikh ppfas hdfc mf plan""".split()
 )
 
 # Small synonym map so paraphrases still count as lexical matches.
@@ -110,6 +110,9 @@ class RetrievalResult:
     scheme_was_defaulted: bool
     topic: Topic | None
     chunks: list[ScoredChunk] = field(default_factory=list)
+    # Other in-scope schemes the question could also refer to (e.g. both AMCs' ELSS funds).
+    other_schemes: list[str] = field(default_factory=list)
+    amc: str | None = None
 
     @property
     def best(self) -> ScoredChunk | None:
@@ -120,17 +123,44 @@ class RetrievalResult:
         return self.best is not None and self.best.relevance >= threshold
 
 
-def resolve_scope(question: str, scheme_hint: str | None = None) -> tuple[str | None, bool, Topic | None]:
-    """Work out (scheme, scheme_was_defaulted, topic) for a question."""
+@dataclass
+class Scope:
+    scheme: str | None
+    defaulted: bool
+    topic: Topic | None
+    amc: str | None
+    other_schemes: list[str]
+
+
+def resolve_scope(question: str, scheme_hint: str | None = None) -> Scope:
+    """Work out which scheme / AMC / topic a question is about.
+
+    - A scheme picked in the UI (scheme_hint) or one unambiguous match wins.
+    - Several matches (e.g. "ELSS" with two AMCs): use the primary AMC's scheme,
+      mark it as defaulted and report the alternatives so the UI can offer them.
+    - No scheme but a scheme-specific topic: the AMC's default scheme if the
+      question names an AMC, otherwise the global DEFAULT_SCHEME.
+    """
     topic = detect_topic(question)
-    scheme = detect_scheme(question) or scheme_hint
-    defaulted = False
-    if scheme is None and topic is not None and not topic.general:
-        # Scheme-specific fact without a named scheme: use the configured default
-        # scheme and say so explicitly in the answer/UI.
-        scheme = get_settings().default_scheme
-        defaulted = True
-    return scheme, defaulted, topic
+    amc = detect_amc(question)
+    if scheme_hint:
+        return Scope(scheme_hint, False, topic, amc_of_scheme(scheme_hint), [])
+    candidates = scheme_candidates(question)
+    if len(candidates) == 1:
+        return Scope(candidates[0], False, topic, amc_of_scheme(candidates[0]), [])
+    default = get_settings().default_scheme
+    if len(candidates) > 1:
+        primary = amc_of_scheme(default)
+        chosen = next((c for c in candidates if amc_of_scheme(c) == primary), candidates[0])
+        return Scope(chosen, True, topic, amc_of_scheme(chosen), [c for c in candidates if c != chosen])
+    if topic is not None and not topic.general:
+        chosen = AMC_DEFAULT_SCHEME.get(amc, default) if amc else default
+        return Scope(chosen, True, topic, amc_of_scheme(chosen), [])
+    if topic is not None and topic.general and amc is None:
+        # Investor-service questions that name no fund house use the primary
+        # AMC's pages (plus AMFI), consistent with the default scheme.
+        return Scope(None, False, topic, amc_of_scheme(default), [])
+    return Scope(None, False, topic, amc, [])
 
 
 def _recency_key(meta: dict) -> str:
@@ -141,7 +171,8 @@ def _recency_key(meta: dict) -> str:
 async def retrieve(question: str, scheme_hint: str | None = None, top_k: int | None = None) -> RetrievalResult:
     settings = get_settings()
     top_k = top_k or settings.top_k
-    scheme, defaulted, topic = resolve_scope(question, scheme_hint)
+    scope = resolve_scope(question, scheme_hint)
+    scheme, defaulted, topic, amc = scope.scheme, scope.defaulted, scope.topic, scope.amc
 
     query_text = question
     if scheme and scheme.lower() not in question.lower():
@@ -150,12 +181,17 @@ async def retrieve(question: str, scheme_hint: str | None = None, top_k: int | N
         query_text += f" {topic.expansion}"
 
     embedding = await embed_query(query_text)
+    # General documents are limited to the question's AMC (plus AMFI) so one
+    # fund house's pages never answer for another.
+    amc_filter = {"amc": {"$in": [amc, "General"]}} if amc else None
     if scheme:
-        where = {"scheme": {"$in": [scheme, "General"]}}
+        scheme_filter = {"scheme": {"$in": [scheme, "General"]}}
+        where = {"$and": [scheme_filter, amc_filter]} if amc_filter else scheme_filter
     elif topic and topic.general:
-        where = {"scheme": "General"}  # investor-service topics live in general documents
+        # Investor-service topics live in general documents.
+        where = {"$and": [{"scheme": "General"}, amc_filter]} if amc_filter else {"scheme": "General"}
     else:
-        where = None
+        where = amc_filter
     candidates = vector_store.query(embedding, max(CANDIDATE_POOL, top_k * 4), where)
 
     if topic and topic.preferred_source_types:
@@ -185,4 +221,5 @@ async def retrieve(question: str, scheme_hint: str | None = None, top_k: int | N
 
     # Highest rank first; ties broken by the most recently updated document.
     scored.sort(key=lambda s: (round(s.rank_score, 3), _recency_key(s.metadata)), reverse=True)
-    return RetrievalResult(question, scheme, defaulted, topic, scored[:top_k])
+    return RetrievalResult(question, scheme, defaulted, topic, scored[:top_k],
+                           other_schemes=scope.other_schemes, amc=amc)

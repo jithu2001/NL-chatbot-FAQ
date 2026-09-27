@@ -11,7 +11,7 @@ export default function Disclaimer() {
         Facts-only. No investment advice.
       </p>
       <p className="mt-1 text-xs leading-relaxed text-amber-800/90 dark:text-amber-100/80">
-        Information is provided from publicly available official AMC (PPFAS Mutual Fund) and AMFI sources. Always verify the
+        Information is provided from publicly available official AMC (PPFAS Mutual Fund, HDFC Mutual Fund) and AMFI sources. Always verify the
         latest official scheme documents.
       </p>
     </section>

@@ -31,6 +31,8 @@ ADVICE = [
     "Can you recommend a fund?",
     "Is it a good time to invest in the ELSS fund?",
     "How much should I invest every month?",
+    "Which is better: HDFC Flexi Cap or Parag Parikh Flexi Cap?",
+    "Which one is best for tax saving?",
 ]
 
 UNSUPPORTED = [

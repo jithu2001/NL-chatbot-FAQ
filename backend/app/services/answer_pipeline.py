@@ -72,7 +72,7 @@ def _source_from_registry(src: Source) -> SourceInfo:
 
 
 def _response(answer: str, classification: Classification, source: SourceInfo | None = None,
-              scheme: str | None = None, defaulted: bool = False) -> ChatResponse:
+              scheme: str | None = None, defaulted: bool = False, others: list[str] | None = None) -> ChatResponse:
     return ChatResponse(
         answer=answer,
         classification=classification.value,
@@ -81,6 +81,7 @@ def _response(answer: str, classification: Classification, source: SourceInfo | 
         retrieved_date=source.retrieved_date if source else None,
         scheme=scheme,
         scheme_defaulted=defaulted,
+        other_schemes=others or [],
     )
 
 
@@ -206,7 +207,7 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
         # Retrieval failed the relevance check: do NOT call Ollama.
         log.info("retrieval below relevance threshold")
         return _response(NOT_VERIFIED_MESSAGE, Classification.FACTUAL, scheme=result.scheme,
-                         defaulted=result.scheme_was_defaulted)
+                         defaulted=result.scheme_was_defaulted, others=result.other_schemes)
 
     # Only chunks that individually pass the relevance check become context.
     context_chunks = [c for c in result.chunks if c.relevance >= settings.relevance_threshold]
@@ -227,13 +228,15 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
     if validation.verdict is Verdict.OK:
         best = select_source(context_chunks, validation.answer, bodies)
         return _response(validation.answer, Classification.FACTUAL, _source_from_meta(best.metadata),
-                         scheme=result.scheme, defaulted=result.scheme_was_defaulted)
+                         scheme=result.scheme, defaulted=result.scheme_was_defaulted,
+                         others=result.other_schemes)
 
     if validation.verdict is Verdict.ADVICE_BLOCKED:
         return _response(ADVICE_BLOCKED_MESSAGE, Classification.FACTUAL,
                          _source_from_meta(result.best.metadata), scheme=result.scheme,
-                         defaulted=result.scheme_was_defaulted)
+                         defaulted=result.scheme_was_defaulted, others=result.other_schemes)
 
     # NOT_VERIFIED / UNGROUNDED / EMPTY: never show an unsupported answer.
     return _response(NOT_VERIFIED_MESSAGE, Classification.FACTUAL, _source_from_meta(result.best.metadata),
-                     scheme=result.scheme, defaulted=result.scheme_was_defaulted)
+                     scheme=result.scheme, defaulted=result.scheme_was_defaulted,
+                         others=result.other_schemes)
