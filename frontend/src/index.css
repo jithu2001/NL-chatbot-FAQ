@@ -1,16 +1,8 @@
-@import "tailwindcss";
-
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --color-brand-50: #eff4ff;
-  --color-brand-100: #dbe6fe;
-  --color-brand-200: #bfd3fe;
-  --color-brand-500: #3b63d9;
-  --color-brand-600: #2a4fc4;
-  --color-brand-700: #2140a0;
-  --color-brand-800: #1e3a8a;
-  --color-brand-900: #172c63;
-}
+/*
+ * Layout only. Every colour, space, radius, shadow and font below is an
+ * Atlassian Design System token (--ds-*), loaded by setGlobalTheme() in
+ * main.tsx, so light/dark mode and the visual language come from the ADS.
+ */
 
 html,
 body,
@@ -19,14 +11,371 @@ body,
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100;
+  margin: 0;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  font: var(--ds-font-body);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- App shell ---------------------------------------------------------- */
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+}
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-200);
+  height: 56px;
+  padding: 0 var(--ds-space-200);
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+}
+
+.product {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-100);
+  min-width: 0;
+}
+
+.product-tile {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ds-radius-small);
+  flex-shrink: 0;
+}
+
+.product-name {
+  font: var(--ds-font-heading-xsmall);
+  color: var(--ds-text);
+  white-space: nowrap;
+}
+
+.product-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--ds-border);
+}
+
+.product-area {
+  font: var(--ds-font-body);
+  color: var(--ds-text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-100);
+}
+
+.dev-status {
+  display: flex;
+  gap: var(--ds-space-050);
+}
+
+.scroll-area {
+  overflow-y: auto;
+  background: var(--ds-surface);
+}
+
+.page {
+  box-sizing: border-box;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--ds-space-400) var(--ds-space-300) var(--ds-space-300);
+}
+
+.page-header {
+  margin-bottom: var(--ds-space-300);
+}
+
+.page-header p {
+  margin: var(--ds-space-100) 0 0;
+  color: var(--ds-text-subtle);
+  font: var(--ds-font-body-large);
+}
+
+.stack-300 > * + * {
+  margin-top: var(--ds-space-300);
+}
+
+/* ---- Empty state -------------------------------------------------------- */
+
+.panel {
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-large);
+  background: var(--ds-surface-raised);
+  box-shadow: var(--ds-shadow-raised);
+}
+
+.panel-section {
+  padding: var(--ds-space-250) var(--ds-space-300);
+}
+
+.panel-section + .panel-section {
+  border-top: 1px solid var(--ds-border);
+}
+
+.panel-section p {
+  margin: var(--ds-space-075) 0 0;
+  color: var(--ds-text-subtle);
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-100);
+  margin-top: var(--ds-space-200);
+}
+
+.scheme-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--ds-space-300);
+  margin-top: var(--ds-space-200);
+}
+
+.scheme-group-title {
+  font: var(--ds-font-heading-xxsmall);
+  color: var(--ds-text-subtle);
+  margin: 0 0 var(--ds-space-100);
+}
+
+.scheme-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scheme-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ds-space-100);
+  padding: var(--ds-space-075) 0;
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.scheme-list li:last-child {
+  border-bottom: 0;
+}
+
+.scheme-category {
+  color: var(--ds-text-subtlest);
+  font: var(--ds-font-body-small);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---- Conversation (comment-style, like Jira/Confluence) ----------------- */
+
+.conversation {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  gap: var(--ds-space-150);
+  padding: var(--ds-space-200) 0;
+}
+
+.entry + .entry {
+  border-top: 1px solid var(--ds-border);
+}
+
+.entry-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-100);
+  min-height: 24px;
+}
+
+.entry-author {
+  font: var(--ds-font-heading-xxsmall);
+  color: var(--ds-text);
+}
+
+.entry-text {
+  margin: var(--ds-space-050) 0 0;
+  font: var(--ds-font-body-large);
+  color: var(--ds-text);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.entry-note {
+  margin: var(--ds-space-100) 0 0;
+  font: var(--ds-font-body-small);
+  color: var(--ds-text-subtlest);
+}
+
+.entry-note strong {
+  color: var(--ds-text-subtle);
+  font-weight: var(--ds-font-weight-semibold);
+}
+
+.loading-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-100);
+  margin-top: var(--ds-space-050);
+  color: var(--ds-text-subtle);
+}
+
+/* ---- Source card ---------------------------------------------------------- */
+
+.source-card {
+  display: flex;
+  gap: var(--ds-space-150);
+  margin-top: var(--ds-space-150);
+  padding: var(--ds-space-150) var(--ds-space-200);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-medium);
+  background: var(--ds-surface-sunken);
+}
+
+.source-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--ds-radius-small);
+  background: var(--ds-background-accent-blue-subtlest);
+}
+
+.source-details {
+  min-width: 0;
+}
+
+.source-label {
+  font: var(--ds-font-body-small);
+  color: var(--ds-text-subtlest);
+}
+
+.source-title {
+  margin-top: var(--ds-space-025);
+  font: var(--ds-font-body);
+  font-weight: var(--ds-font-weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-025) var(--ds-space-150);
+  margin-top: var(--ds-space-075);
+  font: var(--ds-font-body-small);
+  color: var(--ds-text-subtle);
+}
+
+/* ---- Composer ------------------------------------------------------------- */
+
+.composer {
+  border-top: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+}
+
+.composer-inner {
+  box-sizing: border-box;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--ds-space-200) var(--ds-space-300) max(var(--ds-space-200), env(safe-area-inset-bottom));
+}
+
+.composer-field-label {
+  display: block;
+  margin-bottom: var(--ds-space-050);
+  font: var(--ds-font-body-small);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-text-subtle);
+}
+
+.composer-scheme {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-100);
+  margin-bottom: var(--ds-space-100);
+}
+
+.composer-scheme .composer-field-label {
+  margin: 0;
+}
+
+.composer-scheme-select {
+  flex: 0 1 360px;
+  min-width: 0;
+}
+
+.composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ds-space-100);
+}
+
+.composer-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.composer-help {
+  margin: var(--ds-space-075) 0 0;
+  font: var(--ds-font-body-small);
+  color: var(--ds-text-subtlest);
+}
+
+/* ---- Small screens ------------------------------------------------------ */
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--ds-space-300) var(--ds-space-200) var(--ds-space-200);
+  }
+
+  .composer-inner {
+    padding-left: var(--ds-space-200);
+    padding-right: var(--ds-space-200);
+  }
+
+  .composer-scheme-select {
+    flex: 1 1 auto;
+  }
+
+  .composer-keys {
+    display: none;
+  }
+
+  .product-divider,
+  .product-area,
+  .dev-status {
+    display: none;
+  }
+
+  .panel-section {
+    padding: var(--ds-space-200);
   }
 }

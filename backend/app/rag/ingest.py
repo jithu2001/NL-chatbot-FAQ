@@ -152,6 +152,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Embedding model: {settings.embedding_model_id} (chunks ~{settings.chunk_size_tokens} tokens)")
     print("Loading source registry...")
     sources = load_sources()
+    # Sources removed from the registry must not stay searchable.
+    orphans = sorted(vector_store.indexed_source_ids() - {s.source_id for s in sources})
+    for source_id in orphans:
+        vector_store.delete_source(source_id)
+    if orphans:
+        print(f"Removed {len(orphans)} source(s) no longer in sources.csv: {', '.join(orphans)}")
     if args.only:
         wanted = set(args.only)
         sources = [s for s in sources if s.source_id in wanted]

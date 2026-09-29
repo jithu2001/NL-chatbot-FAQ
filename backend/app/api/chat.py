@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.catalog import SCHEMES
+from app.core.catalog import AMC_NAME, SCHEMES
 from app.core.config import get_settings
 from app.llm import provider
 from app.llm.errors import LLMRateLimitedError, LLMUnavailableError
@@ -46,4 +46,4 @@ async def health() -> HealthResponse:
 
 @router.get("/schemes", response_model=list[SchemeInfo])
 async def schemes() -> list[SchemeInfo]:
-    return [SchemeInfo(name=s.name, amc=s.amc, category=s.category) for s in SCHEMES]
+    return [SchemeInfo(name=s.name, amc=AMC_NAME, category=s.category) for s in SCHEMES]

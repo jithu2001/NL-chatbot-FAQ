@@ -90,6 +90,11 @@ def source_fingerprint(source_id: str) -> tuple[int, str | None]:
     return len(metas), (hashes.pop() if len(hashes) == 1 else None)
 
 
+def indexed_source_ids() -> set[str]:
+    res = get_collection().get(include=["metadatas"])
+    return {m["source_id"] for m in res.get("metadatas") or [] if m and m.get("source_id")}
+
+
 def count() -> int:
     return get_collection().count()
 

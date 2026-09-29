@@ -202,6 +202,9 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
         raise KnowledgeBaseEmptyError("the vector store is empty")
 
     result = await retrieve(question, scheme_hint=scheme_hint)
+    # Only chunks whose source is still in the registry can be cited; stale
+    # chunks (source removed from sources.csv) are ignored, never shown.
+    result.chunks = [c for c in result.chunks if c.metadata.get("source_id") in registry()]
     if not result.is_relevant():
         # Retrieval failed the relevance check: do NOT call Ollama.
         log.info("retrieval below relevance threshold")

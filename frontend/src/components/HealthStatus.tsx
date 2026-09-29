@@ -1,3 +1,4 @@
+import Lozenge from "@atlaskit/lozenge";
 import { useEffect, useState } from "react";
 import { getHealth, type HealthResponse } from "../api/chat";
 
@@ -18,21 +19,20 @@ export default function HealthStatus() {
 
   if (health === undefined) return null;
   const item = (label: string, ok: boolean) => (
-    <span className="inline-flex items-center gap-1">
-      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-brand-500" : "bg-slate-400"}`} />
+    <Lozenge appearance={ok ? "success" : "removed"}>
       {label} {ok ? "✓" : "✗"}
-    </span>
+    </Lozenge>
   );
   return (
-    <p className="hidden gap-3 text-[11px] text-slate-400 sm:flex dark:text-slate-500" title="Development status">
+    <span className="dev-status" title="Development status">
       {health ? (
         <>
           {item("AI model", health.llm)}
-          {item("Knowledge Base", health.chromadb)}
+          {item("Knowledge base", health.chromadb)}
         </>
       ) : (
         item("Backend", false)
       )}
-    </p>
+    </span>
   );
 }

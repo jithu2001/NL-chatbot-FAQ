@@ -20,7 +20,7 @@ export interface ChatResponse {
   retrieved_date: string | null;
   scheme: string | null;
   scheme_defaulted: boolean;
-  other_schemes: string[];
+  other_schemes?: string[];
 }
 
 export interface HealthResponse {

@@ -10,15 +10,27 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@atlaskit/avatar": "^29.1.1",
+    "@atlaskit/button": "^25.4.3",
+    "@atlaskit/css-reset": "^8.4.6",
+    "@atlaskit/heading": "^8.0.0",
+    "@atlaskit/icon": "^38.0.2",
+    "@atlaskit/link": "^5.1.6",
+    "@atlaskit/lozenge": "^15.4.6",
+    "@atlaskit/primitives": "^22.5.4",
+    "@atlaskit/section-message": "^10.2.6",
+    "@atlaskit/select": "^23.1.0",
+    "@atlaskit/spinner": "^20.4.4",
+    "@atlaskit/textarea": "^10.2.7",
+    "@atlaskit/tokens": "^20.1.0",
+    "@atlaskit/tooltip": "^24.3.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "tailwindcss": "^4.1.0",
     "typescript": "~5.8.0",
     "vite": "^7.0.0"
   }
