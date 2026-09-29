@@ -48,9 +48,8 @@ PREDICTION_MESSAGE = (
     "expense ratio, benchmark, riskometer, and published official documents."
 )
 PERFORMANCE_MESSAGE = (
-    "I can't provide, rank, or compare return figures or fund performance. I can provide factual "
-    "information about the scheme, such as its expense ratio, benchmark, riskometer, and published "
-    "official documents."
+    "I can't compute, rank, or compare returns or fund performance. The published performance "
+    "figures are in the official factsheet linked below."
 )
 EXPAND_TOP_N = 3  # top hits that get their neighbouring chunks added ("small-to-big")
 
@@ -170,6 +169,19 @@ def _advice_source(scheme: str | None) -> SourceInfo | None:
     return _source_from_registry(src) if src else None
 
 
+def _pii_source() -> SourceInfo | None:
+    """The AMC's official investor-service page: the right place for account-specific help."""
+    src = find_source(title_contains="Investor Desk")
+    return _source_from_registry(src) if src else None
+
+
+def _not_verified_source(scheme: str | None) -> SourceInfo | None:
+    """Where the user can check the official documents: the scheme's KIM, else the KIM/SID downloads page."""
+    src = find_source(scheme=scheme, source_type="Key Information Memorandum") if scheme else None
+    src = src or find_source(title_contains="KIM, SID and SAI")
+    return _source_from_registry(src) if src else None
+
+
 def _unsupported_source() -> SourceInfo | None:
     """The official factsheet - where the AMC publishes its mandated disclosures."""
     src = find_source(source_type="AMC Factsheet")
@@ -178,6 +190,10 @@ def _unsupported_source() -> SourceInfo | None:
 
 def _question_for_llm(result: RetrievalResult) -> str:
     q = result.question
+    topic = result.topic
+    if topic and not topic.general and result.scheme and len(q.split()) <= 4:
+        # Terse questions ("Exit load?") confuse small models; ask the full question.
+        q = f"What is the {topic.name} of {result.scheme}?"
     if result.scheme and result.scheme.lower() not in q.lower():
         q += f" (This question is about {result.scheme}.)"
     if result.topic and result.topic.answer_hint:
@@ -192,7 +208,7 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
 
     if cls.label is Classification.PII:
         # Stop immediately: nothing is embedded, sent to the LLM, or logged.
-        return _response(PII_REFUSAL, Classification.PII)
+        return _response(PII_REFUSAL, Classification.PII, _pii_source())
 
     scheme_named = detect_scheme(question) or scheme_hint
 
@@ -216,8 +232,8 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
     if not result.is_relevant():
         # Retrieval failed the relevance check: do NOT call the LLM.
         log.info("retrieval below relevance threshold")
-        return _response(NOT_VERIFIED_MESSAGE, Classification.FACTUAL, scheme=result.scheme,
-                         defaulted=result.scheme_was_defaulted)
+        return _response(NOT_VERIFIED_MESSAGE, Classification.FACTUAL, _not_verified_source(result.scheme),
+                         scheme=result.scheme, defaulted=result.scheme_was_defaulted)
 
     # Only chunks that individually pass the relevance check become context.
     context_chunks = [c for c in result.chunks if c.relevance >= settings.relevance_threshold]

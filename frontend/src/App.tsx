@@ -17,11 +17,12 @@ function EmptyState({ schemes, onAsk, disabled }: { schemes: SchemeInfo[]; onAsk
     <section className="panel" aria-label="Getting started">
       <div className="panel-section">
         <Heading size="small" as="h2">
-          What you can ask
+          Welcome! Ask a factual question about PPFAS Mutual Fund schemes.
         </Heading>
         <p>
-          Factual questions about the schemes below — expense ratio, exit load, minimum SIP, lock-in, riskometer and
-          benchmark — plus how to get account and capital-gains statements. Every answer links to one official source.
+          I can answer questions about the schemes below — expense ratio, exit load, minimum SIP, ELSS lock-in,
+          riskometer and benchmark — and how to get account and capital-gains statements. Every answer links to one
+          official source.
         </p>
         <ExampleQuestions onSelect={onAsk} disabled={disabled} />
       </div>

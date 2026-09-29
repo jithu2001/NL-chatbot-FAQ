@@ -73,6 +73,10 @@ _ADVICE_PATTERNS = [
     r"\bgood (investment|option|choice)\b",
     r"\bwhich\b(\s+\w+){0,3}\s+(is|are|would be|will be)\s+(better|best|good|safer|superior|preferable)\b",
     r"\b(better|best|safer|superior)\b.{0,40}\b(or|vs\.?|versus)\b.{0,40}\b(fund|scheme|flexi|elss|liquid|cap)\b",
+    # Opinion / portfolio fit: "Is X good for my portfolio?", "Is this fund safe?"
+    r"\b(good|bad|right|safe|suitable|worth|fit|ideal|risky)\b.{0,30}\b(for (me|my|us|our)|my portfolio)\b",
+    r"^\s*(is|are)\b.{0,60}\b(good|bad|safe|risky|worth it)\b\s*(fund|scheme|investment|option|buy)?\s*\??\s*$",
+    r"\b(add|include|keep)\b.{0,30}\b(to|in|into) my portfolio\b",
 ]
 
 _PREDICTION_RE = [re.compile(p, re.I) for p in _PREDICTION_PATTERNS]

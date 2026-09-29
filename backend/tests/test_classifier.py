@@ -37,6 +37,10 @@ ADVICE = [
     "Is it a good time to invest in the ELSS fund?",
     "How much should I invest every month?",
     "Which is better: the Flexi Cap fund or the ELSS fund?",
+    "Is Parag Parikh Flexi Cap good for my portfolio?",
+    "Is the ELSS fund safe?",
+    "Should I add the liquid fund to my portfolio?",
+    "Is the Flexi Cap fund worth it?",
     "Which one is best for tax saving?",
 ]
 

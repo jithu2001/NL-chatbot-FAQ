@@ -152,7 +152,7 @@ TOPICS: tuple[Topic, ...] = (
         "Riskometer The risk of the scheme is",
         preferred_source_types=("AMC Factsheet",),
         prefer_latest=True,
-        answer_hint="State the scheme's riskometer level exactly as stated (for example: 'The risk of the scheme is ...').",
+        answer_hint="State the scheme's riskometer level exactly as stated, naming the scheme, e.g. 'The riskometer of <scheme> shows <level> risk.'",
     ),
     Topic(
         "benchmark",

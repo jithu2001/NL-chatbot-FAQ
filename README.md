@@ -25,7 +25,7 @@ Switch modes with `LLM_PROVIDER` and `EMBEDDING_PROVIDER`; see [Providers](#prov
 - [Requirements](#requirements) · [Ollama installation (local mode)](#ollama-installation-local-mode) · [Model installation](#model-installation) · [Environment variables](#environment-variables)
 - [Backend setup](#backend-setup) · [Frontend setup](#frontend-setup) · [Source ingestion](#source-ingestion) · [Running ChromaDB](#running-chromadb) · [Running the backend](#running-backend) · [Running the frontend](#running-frontend)
 - [Providers](#providers) · [Deploy on Render (free)](#deploy-on-render-free) · [Docker (optional)](#docker-optional)
-- [Testing](#testing) · [Evaluation](#evaluation) · [Known limitations](#known-limitations) · [Disclaimer](#disclaimer)
+- [Testing](#testing) · [Evaluation](#evaluation) · [Known limitations](#known-limitations) · [Deliverables](#deliverables) · [Disclaimer](#disclaimer)
 
 ---
 
@@ -565,6 +565,30 @@ These are the latest results on 31 questions; see [`evaluation/README.md`](evalu
 - **Default scheme.** Questions that name no scheme are answered for the Flexi Cap fund; the answer and the UI say so.
 - **Single-turn.** "This fund" is not resolved from earlier messages. Use the scheme selector or name the scheme.
 - Answers are for **Regular and Direct plans as published**. Account-specific data (holdings, balances, transactions) is out of scope by design.
+
+## Deliverables
+
+| Brief requirement | Where |
+|---|---|
+| Working prototype link | <https://nl-chatbot-faq.onrender.com/> (Render free plan; first visit after 15 min idle takes about 1 min to wake) |
+| Source list (15–25 URLs) | [`data/sources.csv`](data/sources.csv): 24 official PPFAS (AMC) and AMFI URLs, also tabled under [Official sources](#official-sources) |
+| README: setup, scope, known limits | This file: [setup](#backend-setup), [scope](#selected-amc), [known limitations](#known-limitations) |
+| Sample Q&A (5–10 queries with answers and links) | [`evaluation/sample_answers.md`](evaluation/sample_answers.md): 10 real answers, regenerate with `python evaluation/generate_sample_answers.py` |
+| Disclaimer snippet used in the UI | [Below](#disclaimer-snippet-used-in-the-ui) |
+
+**Behaviour required by the brief:**
+
+- **Answers:** every answer carries exactly one official source link, including refusals. Advice and portfolio questions link the scheme's KIM or AMFI investor education. Performance questions link the official factsheet. Personal-data refusals link the AMC's Investor Desk. "Couldn't verify" answers link the scheme's KIM or the official KIM/SID downloads page.
+- **Length and dates:** answers are at most 3 sentences and show "Last updated from sources: …".
+- **Personal data:** PAN, Aadhaar, account or folio numbers, OTPs, emails and phone numbers are refused before any processing, and are never stored or logged.
+- **Performance:** returns are never computed or compared.
+
+### Disclaimer snippet used in the UI
+
+Shown as a warning banner at the top of every page ([`Disclaimer.tsx`](frontend/src/components/Disclaimer.tsx)):
+
+> **Facts-only. No investment advice.**
+> Information is provided from publicly available official AMC (PPFAS Mutual Fund) and AMFI sources. Always verify the latest official scheme documents.
 
 ## Disclaimer
 
