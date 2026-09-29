@@ -18,10 +18,6 @@ CHUNK_OVERLAP_TOKENS = 150
 CHARS_PER_TOKEN = 4  # conservative approximation for English + numbers
 
 
-def estimate_tokens(text: str) -> int:
-    return max(1, len(text) // CHARS_PER_TOKEN)
-
-
 def _split_long(unit: str, max_chars: int) -> list[str]:
     """Split an over-long unit by lines, then sentences, then hard wraps."""
     if len(unit) <= max_chars:

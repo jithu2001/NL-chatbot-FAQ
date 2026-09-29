@@ -1,5 +1,5 @@
 """Ingestion pipeline: official URL -> download -> extract -> clean -> chunk
--> embed (Ollama) -> upsert into ChromaDB.
+-> embed (fastembed or Ollama) -> upsert into ChromaDB.
 
 Idempotent: chunk IDs are deterministic (SRC-001-chunk-0001 ...) and a
 content hash is stored with every chunk, so re-running skips unchanged
@@ -172,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         except LLMUnavailableError as exc:
             print(f"  ✗ Embedding error: {exc}\n\nIs Ollama running and is '{get_settings().ollama_embed_model}' pulled?")
             return 2
-        except Exception as exc:  # noqa: BLE001 - report and continue with other sources
+        except Exception as exc:
             print(f"  ✗ Skipped: {type(exc).__name__}: {exc}")
             failed.append(src.source_id)
         print()

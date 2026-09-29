@@ -2,7 +2,7 @@
 
 A **facts-only** mutual fund FAQ assistant. It answers factual questions about five PPFAS Mutual Fund schemes using **only official public sources** from the AMC and AMFI. Every factual answer includes **exactly one official source link** and the source's official **last-updated date**.
 
-It has a React UI, a FastAPI backend and a persistent **ChromaDB** vector store, and supports two provider modes:
+It has a React UI built with the [Atlassian Design System](https://atlassian.design/), a FastAPI backend and a persistent **ChromaDB** vector store, and supports two provider modes:
 
 | Mode | LLM | Embeddings | Use for |
 |---|---|---|---|
@@ -122,7 +122,7 @@ There are 24 sources: 18 from PPFAS (AMC) and 6 from AMFI. The registry is [`dat
 ```text
 ┌───────────────────────────┐      POST /api/chat       ┌──────────────────────────────────────────────┐
 │ React + TS + Vite +       │ ────────────────────────► │ FastAPI backend                              │
-│ Tailwind (localhost:5173) │ ◄──────────────────────── │                                              │
+│ Atlassian DS (:5173)      │ ◄──────────────────────── │                                              │
 └───────────────────────────┘   answer + 1 source       │  1. PII detector ──► refuse (no LLM, no log) │
                                                         │  2. Classifier  ──► ADVICE / UNSUPPORTED     │
                                                         │                     templates + registry src │
@@ -186,12 +186,13 @@ Official URL (sources.csv) → download (cached in data/documents/) → extract 
 
 ```text
 .
-├── frontend/                     React + TypeScript + Vite + Tailwind CSS v4
+├── frontend/                     React + TypeScript + Vite + Atlassian Design System (@atlaskit)
 │   ├── src/
 │   │   ├── components/           ChatMessage, ChatInput, ExampleQuestions, SourceCitation, Disclaimer, HealthStatus
 │   │   ├── api/chat.ts           API client (/api/chat, /api/health, /api/schemes)
-│   │   ├── App.tsx
-│   │   └── main.tsx
+│   │   ├── App.tsx               app shell: top navigation, page header, empty state, conversation
+│   │   ├── index.css             layout only; every colour/space/font is an ADS token (--ds-*)
+│   │   └── main.tsx              loads the ADS light/dark, spacing, typography and shape themes
 │   ├── package.json
 │   ├── vite.config.ts            dev proxy /api → http://localhost:8000
 ├── backend/
@@ -206,7 +207,7 @@ Official URL (sources.csv) → download (cached in data/documents/) → extract 
 │   │   ├── services/answer_pipeline.py
 │   │   ├── core/                 config.py, catalog.py (schemes/topics), sources.py (registry)
 │   │   └── models/schemas.py
-│   ├── tests/                    pytest unit tests (80)
+│   ├── tests/                    pytest unit tests (84)
 │   ├── requirements.txt, requirements-dev.txt, .env.example
 ├── data/
 │   ├── sources.csv               official source registry
@@ -513,7 +514,7 @@ pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-There are 80 unit tests covering:
+There are 84 unit tests covering:
 
 - The classifier: FACTUAL, ADVICE and UNSUPPORTED examples, including false-positive traps such as *"What is the exit load if I redeem it within a year?"*.
 - The PII detector: positives and negatives.

@@ -57,10 +57,4 @@ class HealthResponse(BaseModel):
 
 class SchemeInfo(BaseModel):
     name: str
-    amc: str
     category: str
-
-
-class ErrorDetail(BaseModel):
-    code: str
-    message: str

@@ -46,16 +46,11 @@ const userAvatar = <Avatar size="medium" name="You" />;
 
 function SchemeNote({ response }: { response: ChatResponse }) {
   if (!response.scheme || response.classification !== "FACTUAL") return null;
-  let hint = "";
-  if (response.scheme_defaulted) {
-    hint = response.other_schemes?.length
-      ? ` — also matches ${response.other_schemes.join(", ")}. Name the fund house or choose it in the Scheme field.`
-      : " — no scheme was named. Name a scheme or choose one in the Scheme field to ask about another.";
-  }
   return (
     <p className="entry-note">
       Scheme: <strong>{response.scheme}</strong>
-      {hint}
+      {response.scheme_defaulted &&
+        " — no scheme was named. Name a scheme or choose one in the Scheme field to ask about another."}
     </p>
   );
 }
@@ -82,7 +77,7 @@ export default function ChatMessage({ message }: { message: Message }) {
   if (message.role === "error") {
     return (
       <Entry author="FAQ Assistant" avatar={assistantAvatar}>
-        <div style={{ marginTop: "var(--ds-space-100)" }} role="alert">
+        <div className="entry-alert" role="alert">
           <SectionMessage appearance="error">
             <p>{message.text}</p>
           </SectionMessage>

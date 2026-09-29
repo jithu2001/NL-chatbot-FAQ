@@ -71,6 +71,8 @@ _ADVICE_PATTERNS = [
     r"\b(my savings|my money|my retirement|my goals?)\b",
     r"\bfor me\b",
     r"\bgood (investment|option|choice)\b",
+    r"\bwhich\b(\s+\w+){0,3}\s+(is|are|would be|will be)\s+(better|best|good|safer|superior|preferable)\b",
+    r"\b(better|best|safer|superior)\b.{0,40}\b(or|vs\.?|versus)\b.{0,40}\b(fund|scheme|flexi|elss|liquid|cap)\b",
 ]
 
 _PREDICTION_RE = [re.compile(p, re.I) for p in _PREDICTION_PATTERNS]

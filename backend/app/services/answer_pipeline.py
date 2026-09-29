@@ -11,9 +11,12 @@ always chosen by this module from ChromaDB metadata / the source registry.
 from __future__ import annotations
 
 import logging
-import re
 
-from app.classifier.question_classifier import REASON_PREDICTION, Classification, classify
+from app.classifier.question_classifier import (
+    REASON_PREDICTION,
+    Classification,
+    classify,
+)
 from app.core.catalog import detect_scheme
 from app.core.config import get_settings
 from app.core.sources import Source, find_source, registry
@@ -21,7 +24,14 @@ from app.llm import provider
 from app.models.schemas import ChatResponse, SourceInfo
 from app.prompts.system_prompt import NOT_VERIFIED_MESSAGE, build_system_prompt
 from app.rag import vector_store
-from app.rag.retriever import RetrievalResult, ScoredChunk, key_terms, lexical_coverage, retrieve
+from app.rag.retriever import (
+    RetrievalResult,
+    ScoredChunk,
+    key_terms,
+    lexical_coverage,
+    recency_key,
+    retrieve,
+)
 from app.safety.answer_validator import Verdict, numbers_in, validate_answer
 from app.safety.pii_detector import PII_REFUSAL
 
@@ -42,6 +52,8 @@ PERFORMANCE_MESSAGE = (
     "information about the scheme, such as its expense ratio, benchmark, riskometer, and published "
     "official documents."
 )
+EXPAND_TOP_N = 3  # top hits that get their neighbouring chunks added ("small-to-big")
+
 ADVICE_BLOCKED_MESSAGE = (
     "I can only share factual information from official scheme documents and can't offer investment advice."
 )
@@ -90,9 +102,6 @@ def _strip_chunk_header(text: str) -> str:
     return body if sep and head.startswith("Document:") else text
 
 
-EXPAND_TOP_N = 3  # top hits that get their neighbouring chunks added ("small-to-big")
-
-
 def expand_with_neighbors(chunks: list[ScoredChunk]) -> dict[str, str]:
     """Return chunk id -> body text, where the top hits include the adjacent
     chunks from the same page. Small chunks retrieve precisely; the neighbours
@@ -117,22 +126,23 @@ def expand_with_neighbors(chunks: list[ScoredChunk]) -> dict[str, str]:
     return bodies
 
 
-def build_context(chunks: list[ScoredChunk], bodies: dict[str, str] | None = None) -> str:
+def build_context(chunks: list[ScoredChunk], bodies: dict[str, str]) -> str:
+    """Numbered, labelled passages for the prompt (chunks merged into a
+    neighbour's window by expand_with_neighbors are skipped)."""
     parts = []
     for c in chunks:
-        if bodies is not None and c.chunk.id not in bodies:
+        if c.chunk.id not in bodies:
             continue
         m = c.metadata
         label = f"[{len(parts) + 1}] {m.get('title')} | Scheme: {m.get('scheme')}"
         if m.get("page"):
             label += f" | Page {m['page']}"
         label += f" | Last updated: {m.get('last_updated', 'Not specified')}"
-        body = bodies[c.chunk.id] if bodies is not None else _strip_chunk_header(c.text)
-        parts.append(f"{label}\n{body}")
+        parts.append(f"{label}\n{bodies[c.chunk.id]}")
     return "\n\n---\n\n".join(parts)
 
 
-def select_source(chunks: list[ScoredChunk], answer: str, bodies: dict[str, str] | None = None) -> ScoredChunk:
+def select_source(chunks: list[ScoredChunk], answer: str, bodies: dict[str, str]) -> ScoredChunk:
     """Pick the single chunk that best supports the generated answer.
 
     Criteria: retrieval rank (relevance + authority/scheme preference), how
@@ -142,17 +152,15 @@ def select_source(chunks: list[ScoredChunk], answer: str, bodies: dict[str, str]
     answer_numbers = numbers_in(answer)
     answer_terms = key_terms(answer)
 
-    candidates = [c for c in chunks if bodies is None or c.chunk.id in bodies]
+    candidates = [c for c in chunks if c.chunk.id in bodies]
 
     def score(c: ScoredChunk) -> tuple[float, str]:
-        body = bodies[c.chunk.id] if bodies is not None else _strip_chunk_header(c.text)
+        body = bodies[c.chunk.id]
         num_support = (len(answer_numbers & numbers_in(body)) / len(answer_numbers)) if answer_numbers else 0.0
         overlap = lexical_coverage(answer_terms, body) if answer_terms else 0.0
-        recency = c.metadata.get("last_updated", "")
-        recency = recency if re.fullmatch(r"\d{4}-\d{2}-\d{2}", recency) else "0000-00-00"
-        return (c.rank_score + 0.35 * num_support + 0.35 * overlap, recency)
+        return (c.rank_score + 0.35 * num_support + 0.35 * overlap, recency_key(c.metadata))
 
-    return max(candidates or chunks, key=score)
+    return max(candidates, key=score)
 
 
 def _advice_source(scheme: str | None) -> SourceInfo | None:
@@ -183,7 +191,7 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
     log.info("classified question as %s", cls.label.value)
 
     if cls.label is Classification.PII:
-        # Stop immediately: nothing is embedded, sent to Ollama, or logged.
+        # Stop immediately: nothing is embedded, sent to the LLM, or logged.
         return _response(PII_REFUSAL, Classification.PII)
 
     scheme_named = detect_scheme(question) or scheme_hint
@@ -206,7 +214,7 @@ async def answer_question(question: str, scheme_hint: str | None = None) -> Chat
     # chunks (source removed from sources.csv) are ignored, never shown.
     result.chunks = [c for c in result.chunks if c.metadata.get("source_id") in registry()]
     if not result.is_relevant():
-        # Retrieval failed the relevance check: do NOT call Ollama.
+        # Retrieval failed the relevance check: do NOT call the LLM.
         log.info("retrieval below relevance threshold")
         return _response(NOT_VERIFIED_MESSAGE, Classification.FACTUAL, scheme=result.scheme,
                          defaulted=result.scheme_was_defaulted)

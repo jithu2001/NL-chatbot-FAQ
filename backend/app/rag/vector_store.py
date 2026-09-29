@@ -40,7 +40,7 @@ def get_client() -> chromadb.ClientAPI:
                 path=str(path),
                 settings=ChromaSettings(anonymized_telemetry=False, allow_reset=False),
             )
-        except Exception as exc:  # noqa: BLE001 - surface as a single error type
+        except Exception as exc:
             raise VectorStoreUnavailableError("Could not open ChromaDB") from exc
     return _client
 
@@ -55,7 +55,7 @@ def get_collection():
     try:
         try:
             collection = client.get_collection(settings.collection_name, embedding_function=None)
-        except Exception:  # noqa: BLE001 - does not exist yet
+        except Exception:
             return client.create_collection(
                 name=settings.collection_name,
                 metadata={"hnsw:space": "cosine", "embedding_model": settings.embedding_model_id},
@@ -64,7 +64,7 @@ def get_collection():
         stored = (collection.metadata or {}).get("embedding_model")
         if stored is None and collection.count() > 0:
             stored = "ollama:nomic-embed-text"  # indexes built before the model was recorded
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise VectorStoreUnavailableError("Could not open collection") from exc
     if stored and stored != settings.embedding_model_id:
         raise EmbeddingModelMismatchError(
@@ -109,7 +109,7 @@ def query(embedding: list[float], top_k: int, where: dict[str, Any] | None = Non
         )
     except VectorStoreUnavailableError:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise VectorStoreUnavailableError("Vector query failed") from exc
 
     chunks: list[RetrievedChunk] = []
@@ -146,7 +146,7 @@ def stored_count_any_model() -> int:
     name = get_settings().collection_name
     try:
         return get_client().get_collection(name).count()
-    except Exception:  # noqa: BLE001 - collection may not exist
+    except Exception:
         return 0
 
 
@@ -154,5 +154,5 @@ def is_available() -> bool:
     try:
         get_collection().count()
         return True
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False

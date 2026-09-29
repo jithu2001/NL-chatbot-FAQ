@@ -3,7 +3,7 @@ import SendIcon from "@atlaskit/icon/core/send";
 import Select from "@atlaskit/select";
 import TextArea from "@atlaskit/textarea";
 import { useState, type FormEvent, type KeyboardEvent } from "react";
-import { groupByAmc, type SchemeInfo } from "../api/chat";
+import type { SchemeInfo } from "../api/chat";
 
 const MAX_LENGTH = 500;
 
@@ -25,12 +25,8 @@ const AUTO: Option = { label: "Auto (detect from question)", value: "" };
 export default function ChatInput({ onSubmit, disabled, schemes, scheme, onSchemeChange }: Props) {
   const [value, setValue] = useState("");
 
-  const groups = groupByAmc(schemes).map(([amc, list]) => ({
-    label: amc,
-    options: list.map((s) => ({ label: `${s.name} — ${s.category}`, value: s.name })),
-  }));
-  const options = [AUTO, ...groups];
-  const selected = groups.flatMap((g) => g.options).find((o) => o.value === scheme) ?? AUTO;
+  const options: Option[] = [AUTO, ...schemes.map((s) => ({ label: `${s.name} — ${s.category}`, value: s.name }))];
+  const selected = options.find((o) => o.value === scheme) ?? AUTO;
 
   function submit(e?: FormEvent) {
     e?.preventDefault();

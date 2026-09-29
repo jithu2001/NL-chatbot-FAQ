@@ -2,7 +2,7 @@ import Button from "@atlaskit/button/new";
 import Heading from "@atlaskit/heading";
 import RefreshIcon from "@atlaskit/icon/core/refresh";
 import { useEffect, useRef, useState } from "react";
-import { ApiError, askQuestion, getSchemes, groupByAmc, type SchemeInfo } from "./api/chat";
+import { ApiError, askQuestion, getSchemes, type SchemeInfo } from "./api/chat";
 import ChatInput from "./components/ChatInput";
 import ChatMessage, { LoadingEntry, type Message } from "./components/ChatMessage";
 import Disclaimer from "./components/Disclaimer";
@@ -28,23 +28,16 @@ function EmptyState({ schemes, onAsk, disabled }: { schemes: SchemeInfo[]; onAsk
       {schemes.length > 0 && (
         <div className="panel-section">
           <Heading size="xsmall" as="h2">
-            Schemes covered
+            Schemes covered · PPFAS Mutual Fund
           </Heading>
-          <div className="scheme-groups">
-            {groupByAmc(schemes).map(([amc, list]) => (
-              <div key={amc}>
-                <h3 className="scheme-group-title">{amc}</h3>
-                <ul className="scheme-list">
-                  {list.map((s) => (
-                    <li key={s.name}>
-                      <span>{s.name}</span>
-                      <span className="scheme-category">{s.category}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <ul className="scheme-list">
+            {schemes.map((s) => (
+              <li key={s.name}>
+                <span>{s.name}</span>
+                <span className="scheme-category">{s.category}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </section>

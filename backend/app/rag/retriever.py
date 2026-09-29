@@ -1,7 +1,7 @@
 """Retrieval: scheme/topic-aware vector search + hybrid re-ranking.
 
 1. Detect scheme and topic in the question.
-2. Embed an expanded query with Ollama.
+2. Embed an expanded query (fastembed or Ollama, per EMBEDDING_PROVIDER).
 3. Query ChromaDB with a metadata filter on scheme (plus general documents).
 4. Re-rank a wider candidate pool with a hybrid relevance score:
        relevance = 0.5 * semantic cosine similarity
@@ -31,11 +31,7 @@ PREFERRED_SOURCE_BOOST = 0.06
 SCHEME_MATCH_BOOST = 0.03
 
 _STOPWORDS = set(
-    """a an the is are was were be been of for to in on at by with from and or not no
-    what which who whom whose when where why how do does did can could should would will
-    i me my mine we our you your it its this that these those there here any some
-    about tell please much many get give show find know need want
-    fund funds scheme schemes mutual parag parikh ppfas mf plan""".split()
+    ["a", "an", "the", "is", "are", "was", "were", "be", "been", "of", "for", "to", "in", "on", "at", "by", "with", "from", "and", "or", "not", "no", "what", "which", "who", "whom", "whose", "when", "where", "why", "how", "do", "does", "did", "can", "could", "should", "would", "will", "i", "me", "my", "mine", "we", "our", "you", "your", "it", "its", "this", "that", "these", "those", "there", "here", "any", "some", "about", "tell", "please", "much", "many", "get", "give", "show", "find", "know", "need", "want", "fund", "funds", "scheme", "schemes", "mutual", "parag", "parikh", "ppfas", "mf", "plan"]
 )
 
 # Small synonym map so paraphrases still count as lexical matches.
@@ -133,7 +129,8 @@ def resolve_scope(question: str, scheme_hint: str | None = None) -> tuple[str | 
     return scheme, defaulted, topic
 
 
-def _recency_key(meta: dict) -> str:
+def recency_key(meta: dict) -> str:
+    """ISO last-updated date for sorting; undated sources sort oldest."""
     value = meta.get("last_updated", "")
     return value if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) else "0000-00-00"
 
@@ -184,5 +181,5 @@ async def retrieve(question: str, scheme_hint: str | None = None, top_k: int | N
         scored.append(ScoredChunk(c, c.similarity, lexical, relevance, rank))
 
     # Highest rank first; ties broken by the most recently updated document.
-    scored.sort(key=lambda s: (round(s.rank_score, 3), _recency_key(s.metadata)), reverse=True)
+    scored.sort(key=lambda s: (round(s.rank_score, 3), recency_key(s.metadata)), reverse=True)
     return RetrievalResult(question, scheme, defaulted, topic, scored[:top_k])

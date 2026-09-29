@@ -1,4 +1,9 @@
-from app.safety.answer_validator import Verdict, split_sentences, strip_citations, validate_answer
+from app.safety.answer_validator import (
+    Verdict,
+    split_sentences,
+    strip_citations,
+    validate_answer,
+)
 
 CTX = "Expense Ratio Regular Plan: 1.05%* Direct Plan: 0.53%* Monthly SIP: ₹1,000 lock in of three years"
 

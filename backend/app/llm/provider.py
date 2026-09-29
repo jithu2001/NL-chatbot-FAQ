@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from app.core.config import get_settings
 from app.llm import groq_client, ollama_client
+from app.rag import embeddings
 
 
 async def chat(system: str, user: str) -> str:
@@ -20,10 +23,6 @@ async def is_available() -> bool:
 
 async def warm_up() -> None:
     """Load models so the first question is fast (local model and/or embedder)."""
-    import asyncio
-
-    from app.rag.embeddings import warm_up as warm_embeddings
-
-    await asyncio.to_thread(warm_embeddings)
+    await asyncio.to_thread(embeddings.warm_up)
     if get_settings().llm_provider == "ollama":
         await ollama_client.warm_up()

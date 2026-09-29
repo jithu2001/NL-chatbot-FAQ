@@ -10,8 +10,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-AMC_NAME = "PPFAS Mutual Fund"
-
 
 @dataclass(frozen=True)
 class Scheme:
@@ -210,7 +208,6 @@ TOPICS: tuple[Topic, ...] = (
     ),
 )
 
-_TOPIC_BY_NAME = {t.name: t for t in TOPICS}
 
 
 def _norm(text: str) -> str:
@@ -244,10 +241,6 @@ def detect_topic(question: str) -> Topic | None:
         if any(re.search(p, q) for p in topic.patterns):
             return topic
     return None
-
-
-def get_topic(name: str | None) -> Topic | None:
-    return _TOPIC_BY_NAME.get(name) if name else None
 
 
 def find_scheme_in_text(text: str, head_chars: int = 400) -> str | None:
