@@ -16,7 +16,7 @@ from pathlib import Path
 
 import httpx
 
-from app.core.catalog import amc_for_host, amc_of_scheme, find_scheme_in_text
+from app.core.catalog import find_scheme_in_text
 from app.core.config import get_settings
 from app.core.sources import Source, load_sources
 from app.llm.errors import LLMUnavailableError
@@ -25,19 +25,7 @@ from app.rag.chunker import CHUNKER_VERSION, chunk_text
 from app.rag.embeddings import embed_documents, use_all_cores
 from app.rag.extractors import PageText, extract_html, extract_pdf
 
-# Some AMC sites (e.g. hdfcfund.com, behind Akamai) reject non-browser clients,
-# so downloads send ordinary browser headers. Only registry URLs are fetched.
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate",
-    "Upgrade-Insecure-Requests": "1",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-}
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) PowerUpMoney-FAQ-Ingest/1.0 (+official-sources-only)"
 
 
 @dataclass
@@ -64,7 +52,7 @@ def download(src: Source, refresh: bool = False) -> tuple[bytes, bool, str]:
     if not refresh and (hit := _cached(src)):
         return hit[0], hit[1], "cache"
     try:
-        r = httpx.get(src.url, headers=HEADERS, follow_redirects=True, timeout=120)
+        r = httpx.get(src.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True, timeout=60)
         r.raise_for_status()
     except httpx.HTTPError:
         if hit := _cached(src):
@@ -84,13 +72,6 @@ def extract(data: bytes, is_pdf: bool) -> list[PageText]:
     return extract_pdf(data) if is_pdf else extract_html(data)
 
 
-def source_amc(src: Source, scheme: str) -> str:
-    """AMC a chunk belongs to: the scheme's AMC, else the site's AMC, else General (AMFI/SEBI)."""
-    from urllib.parse import urlparse
-
-    return amc_of_scheme(scheme) or amc_for_host(urlparse(src.url).hostname or "") or "General"
-
-
 def build_chunks(src: Source, pages: list[PageText], content_hash: str) -> list[Chunk]:
     chunks: list[Chunk] = []
     for page in pages:
@@ -99,17 +80,16 @@ def build_chunks(src: Source, pages: list[PageText], content_hash: str) -> list[
             # Trust the page title when there is one; covers, indexes and
             # multi-fund tables mention every scheme in their body text.
             detected = find_scheme_in_text(page.heading) if page.heading else find_scheme_in_text(page.text)
-            if detected in (None, "OUT_OF_SCOPE"):
-                continue  # cover/annexure pages and schemes outside this assistant's scope
-            scheme = detected
-        amc = source_amc(src, scheme)
-        header = f"Document: {src.title}\nAMC: {amc}\nScheme: {scheme}"
+            if detected == "OUT_OF_SCOPE":
+                continue  # page about a scheme outside this assistant's scope
+            scheme = detected or "General"
+        header = f"Document: {src.title}\nScheme: {scheme}"
         if page.page is not None:
             header += f"\nPage: {page.page}"
         settings = get_settings()
         for piece in chunk_text(page.text, settings.chunk_size_tokens, settings.chunk_overlap_tokens):
             n = len(chunks) + 1
-            meta = src.metadata() | {"scheme": scheme, "amc": amc, "chunk_index": n, "content_hash": content_hash}
+            meta = src.metadata() | {"scheme": scheme, "chunk_index": n, "content_hash": content_hash}
             if page.page is not None:
                 meta["page"] = page.page
             chunks.append(Chunk(id=f"{src.source_id}-chunk-{n:04d}", text=f"{header}\n\n{piece}", metadata=meta))

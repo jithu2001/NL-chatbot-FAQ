@@ -1,4 +1,4 @@
-"""Static catalogue of the selected AMCs, their schemes and the FAQ topics.
+"""Static catalogue of the selected AMC, its schemes and the FAQ topics.
 
 Scheme and topic detection are deliberately rule-based: they are
 deterministic, fast, easy to test and never need to send the user's
@@ -10,82 +10,52 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-PPFAS = "PPFAS Mutual Fund"
-HDFC = "HDFC Mutual Fund"
-AMCS: tuple[str, ...] = (PPFAS, HDFC)
-
-# Words that identify a fund house in a question.
-AMC_KEYWORDS: dict[str, tuple[str, ...]] = {
-    PPFAS: ("parag parikh", "ppfas", "parag"),
-    HDFC: ("hdfc",),
-}
-
-# Official website hosts per AMC (used to tag general pages with their AMC).
-AMC_HOSTS: dict[str, tuple[str, ...]] = {
-    PPFAS: ("amc.ppfas.com",),
-    HDFC: ("www.hdfcfund.com", "hdfcfund.com", "files.hdfcfund.com"),
-}
+AMC_NAME = "PPFAS Mutual Fund"
 
 
 @dataclass(frozen=True)
 class Scheme:
     name: str
-    amc: str
     category: str
-    # Category phrases that identify the scheme within its AMC.
-    category_aliases: tuple[str, ...]
-    # Codes / former names that identify this exact scheme on their own.
-    unique_aliases: tuple[str, ...] = ()
+    aliases: tuple[str, ...]
 
 
 SCHEMES: tuple[Scheme, ...] = (
-    Scheme("Parag Parikh Flexi Cap Fund", PPFAS, "Flexi Cap (Equity)",
-           ("flexi cap", "flexicap", "flexi-cap"), ("ppfcf", "long term equity fund")),
-    Scheme("Parag Parikh Large Cap Fund", PPFAS, "Large Cap (Equity)",
-           ("large cap", "largecap", "large-cap"), ("pplcf",)),
-    Scheme("Parag Parikh ELSS Tax Saver Fund", PPFAS, "ELSS (Equity Linked Savings Scheme)",
-           ("elss", "tax saver", "tax-saver", "tax saving"), ("pptsf",)),
-    Scheme("Parag Parikh Liquid Fund", PPFAS, "Liquid (Debt)",
-           ("liquid",), ("pplf",)),
-    Scheme("Parag Parikh Conservative Hybrid Fund", PPFAS, "Conservative Hybrid",
-           ("conservative hybrid", "hybrid"), ("ppchf",)),
-    Scheme("HDFC Flexi Cap Fund", HDFC, "Flexi Cap (Equity)",
-           ("flexi cap", "flexicap", "flexi-cap"), ("hdfc equity fund",)),
-    Scheme("HDFC Large Cap Fund", HDFC, "Large Cap (Equity)",
-           ("large cap", "largecap", "large-cap"), ("hdfc top 100",)),
-    Scheme("HDFC Mid Cap Fund", HDFC, "Mid Cap (Equity)",
-           ("mid cap", "midcap", "mid-cap"), ("hdfc mid-cap opportunities", "hdfc mid cap opportunities")),
-    Scheme("HDFC ELSS Tax Saver Fund", HDFC, "ELSS (Equity Linked Savings Scheme)",
-           ("elss", "tax saver", "tax-saver", "tax saving"), ("hdfc taxsaver",)),
-    Scheme("HDFC Liquid Fund", HDFC, "Liquid (Debt)",
-           ("liquid",)),
+    Scheme(
+        "Parag Parikh Flexi Cap Fund",
+        "Flexi Cap (Equity)",
+        ("flexi cap", "flexicap", "flexi-cap", "ppfcf", "long term equity"),
+    ),
+    Scheme(
+        "Parag Parikh Large Cap Fund",
+        "Large Cap (Equity)",
+        ("large cap fund", "largecap", "large-cap fund", "pplcf", "large cap scheme"),
+    ),
+    Scheme(
+        "Parag Parikh ELSS Tax Saver Fund",
+        "ELSS (Equity Linked Savings Scheme)",
+        ("elss", "tax saver", "tax-saver", "tax saving fund", "pptsf"),
+    ),
+    Scheme(
+        "Parag Parikh Liquid Fund",
+        "Liquid (Debt)",
+        ("liquid fund", "liquid scheme", "pplf"),
+    ),
+    Scheme(
+        "Parag Parikh Conservative Hybrid Fund",
+        "Conservative Hybrid",
+        ("conservative hybrid", "hybrid fund", "ppchf"),
+    ),
 )
 
 SCHEME_NAMES: tuple[str, ...] = tuple(s.name for s in SCHEMES)
-_SCHEME_BY_NAME = {s.name: s for s in SCHEMES}
 
-# Default scheme per AMC when a scheme-specific question names only the AMC.
-AMC_DEFAULT_SCHEME: dict[str, str] = {PPFAS: "Parag Parikh Flexi Cap Fund", HDFC: "HDFC Flexi Cap Fund"}
-
-# Any "<AMC> ... Fund" heading that is not an in-scope scheme is skipped during
-# ingestion (multi-scheme factsheets cover dozens of other schemes).
-_OTHER_SCHEME_HEADING = re.compile(r"\b(parag parikh|hdfc)\b.{0,60}\b(fund|fof|etf|plan|index)\b", re.I)
-
-
-def get_scheme(name: str | None) -> Scheme | None:
-    return _SCHEME_BY_NAME.get(name) if name else None
-
-
-def amc_of_scheme(name: str | None) -> str | None:
-    scheme = get_scheme(name)
-    return scheme.amc if scheme else None
-
-
-def amc_for_host(host: str) -> str | None:
-    for amc, hosts in AMC_HOSTS.items():
-        if host in hosts:
-            return amc
-    return None
+# Schemes that appear in multi-scheme documents but are NOT part of this
+# assistant's scope. Pages about them are skipped during ingestion.
+OUT_OF_SCOPE_SCHEMES: tuple[str, ...] = (
+    "Parag Parikh Arbitrage Fund",
+    "Parag Parikh Dynamic Asset Allocation Fund",
+)
 
 
 @dataclass(frozen=True)
@@ -247,41 +217,25 @@ def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower()).strip()
 
 
-def _squash(text: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", text.lower())
-
-
-def detect_amc(question: str) -> str | None:
-    q = _norm(question)
-    found = [amc for amc, words in AMC_KEYWORDS.items() if any(re.search(rf"\b{re.escape(w)}\b", q) for w in words)]
-    return found[0] if len(found) == 1 else None
-
-
-def scheme_candidates(question: str) -> list[str]:
-    """All in-scope schemes the question could refer to (empty if none).
-
-    A full scheme name or unique alias wins outright. Otherwise category words
-    ("flexi cap", "ELSS", "liquid") match every AMC's scheme of that category,
-    narrowed to one AMC when the question names the fund house.
-    """
-    q = _norm(question)
-    squashed = _squash(question)
-    exact = [s.name for s in SCHEMES
-             if _squash(s.name) in squashed or any(re.search(rf"\b{re.escape(a)}\b", q) for a in s.unique_aliases)]
-    if exact:
-        return exact[:1]
-    amc = detect_amc(question)
-    matches = [s.name for s in SCHEMES
-               if any(re.search(rf"\b{re.escape(a)}\b", q) for a in s.category_aliases)
-               and (amc is None or s.amc == amc)]
-    # "large and mid cap" should not also count as "large cap" + "mid cap".
-    return list(dict.fromkeys(matches))
-
-
 def detect_scheme(question: str) -> str | None:
-    """The single scheme the question refers to, or None (none or ambiguous)."""
-    candidates = scheme_candidates(question)
-    return candidates[0] if len(candidates) == 1 else None
+    """Return the canonical scheme name mentioned in the question, if any."""
+    q = _norm(question)
+    for scheme in SCHEMES:
+        if scheme.name.lower() in q:
+            return scheme.name
+    for scheme in SCHEMES:
+        if any(alias in q for alias in scheme.aliases):
+            return scheme.name
+    # Bare category words ("the large cap", "hybrid", "liquid") as a fallback.
+    fallbacks = {
+        "large cap": "Parag Parikh Large Cap Fund",
+        "liquid": "Parag Parikh Liquid Fund",
+        "hybrid": "Parag Parikh Conservative Hybrid Fund",
+    }
+    for word, name in fallbacks.items():
+        if re.search(rf"\b{word}\b", q):
+            return name
+    return None
 
 
 def detect_topic(question: str) -> Topic | None:
@@ -297,20 +251,17 @@ def get_topic(name: str | None) -> Topic | None:
 
 
 def find_scheme_in_text(text: str, head_chars: int = 400) -> str | None:
-    """Detect which scheme a document page is about from its heading text.
+    """Detect which scheme a document page is about by looking at its heading area.
 
-    Returns the in-scope scheme name, "OUT_OF_SCOPE" for any other scheme of
-    the AMCs, or None when the heading names no scheme.
+    Returns the in-scope scheme name, "OUT_OF_SCOPE" for other schemes of the
+    AMC, or None when no scheme heading is found.
     """
-    head = text[:head_chars]
-    squashed = _squash(head)
+    head = _norm(text[:head_chars])
     best: tuple[int, str] | None = None
-    for name in SCHEME_NAMES:
-        idx = squashed.find(_squash(name))
+    for name in SCHEME_NAMES + OUT_OF_SCOPE_SCHEMES:
+        idx = head.find(name.lower())
         if idx != -1 and (best is None or idx < best[0]):
             best = (idx, name)
-    if best is not None:
-        return best[1]
-    if _OTHER_SCHEME_HEADING.search(head):
-        return "OUT_OF_SCOPE"
-    return None
+    if best is None:
+        return None
+    return best[1] if best[1] in SCHEME_NAMES else "OUT_OF_SCOPE"

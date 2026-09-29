@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 
 # Bump when the chunking algorithm changes so ingestion re-indexes everything.
-CHUNKER_VERSION = "3"
+CHUNKER_VERSION = "2"
 CHUNK_SIZE_TOKENS = 900
 CHUNK_OVERLAP_TOKENS = 150
 CHARS_PER_TOKEN = 4  # conservative approximation for English + numbers

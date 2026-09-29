@@ -5,36 +5,6 @@
 **Dataset:** [`sample_qa.csv`](sample_qa.csv), 31 questions
 **Runner:** `python evaluation/run_eval.py` (writes `evaluation/results/latest.csv` and `summary.json`)
 
-## Latest run: two AMCs (PPFAS + HDFC), hosted mode
-
-**Setup:** after adding HDFC Mutual Fund, the corpus has 33 sources and 1,854 chunks. The dataset grew to 42 questions: the original 31, 9 HDFC questions, plus 2 cross-AMC questions (an AMC with no scheme named, and "which is better: HDFC or Parag Parikh Flexi Cap").
-
-| Metric | Result |
-|---|---|
-| Classification | 42/42 |
-| Retrieval hit@5 | 29/29 |
-| Citation accuracy | 29/29 |
-| Answer correctness | 31/31 |
-| Grounded numbers | 29/29 |
-| Refusals without an LLM call | 11/11 |
-| Median latency | 1.9 s |
-
-**HDFC answers checked by hand** against the August 2026 HDFC factsheet:
-
-- Expense ratios (Regular / Direct): Flexi Cap 1.27% / 0.67%, Large Cap 1.52% / 0.98%, Liquid 0.30% / 0.20%.
-- Flexi Cap exit load: 1.00% within 1 year.
-- Benchmarks: Mid Cap NIFTY Midcap 150 (TRI), Liquid CRISIL Liquid Debt A-I.
-- ELSS: 3-year lock-in, from the HDFC ELSS KIM.
-
-**Two gaps found and fixed during this run:**
-
-1. The bare "How do I download my capital-gains statement?" pulled HDFC's guide. Now investor-service questions that name no fund house use the primary AMC, consistent with the default scheme.
-2. "Which is better: HDFC … or Parag Parikh …?" wasn't recognised as advice; it was only caught by the retrieval gate. Added "which is better / X or Y" advice rules.
-
-**Not answerable:** HDFC riskometer levels are published only as images, so those questions correctly return "I couldn't verify…".
-
-**Memory under Render limits:** the rebuilt image was run under `--memory=512m --cpus=0.1` and used about 363 MB, with no out-of-memory kills.
-
 ## Hosted mode results (Groq + fastembed, the Render configuration)
 
 **Setup:** `LLM_PROVIDER=groq` with `llama-3.1-8b-instant`, and `EMBEDDING_PROVIDER=fastembed` with `BAAI/bge-small-en-v1.5` (384-dim). There are 1,513 chunks of about 350 tokens, with neighbour-chunk expansion at answer time.

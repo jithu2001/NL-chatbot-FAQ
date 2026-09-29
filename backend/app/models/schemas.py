@@ -45,10 +45,8 @@ class ChatResponse(BaseModel):
     last_updated: str | None = None
     retrieved_date: str | None = None
     scheme: str | None = None
-    # True when the question named no scheme (or matched several) and a default was used.
+    # True when the question named no scheme and the default scheme was used.
     scheme_defaulted: bool = False
-    # Other schemes the question also matches (e.g. the other AMC's ELSS fund).
-    other_schemes: list[str] = []
 
 
 class HealthResponse(BaseModel):
@@ -59,7 +57,6 @@ class HealthResponse(BaseModel):
 
 class SchemeInfo(BaseModel):
     name: str
-    amc: str
     category: str
 
 
