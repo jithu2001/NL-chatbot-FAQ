@@ -5,12 +5,7 @@ from __future__ import annotations
 import httpx
 
 from app.core.config import get_settings
-
-
 from app.llm.errors import LLMUnavailableError
-
-# Kept as an alias so callers can catch provider-agnostic errors.
-OllamaUnavailableError = LLMUnavailableError
 
 
 def _base() -> str:
@@ -28,7 +23,7 @@ def embed_sync(texts: list[str], model: str | None = None) -> list[list[float]]:
         r = httpx.post(f"{_base()}/api/embed", json={"model": model, "input": texts}, timeout=_timeout())
         r.raise_for_status()
     except httpx.HTTPError as exc:
-        raise OllamaUnavailableError(f"Embedding request failed: {exc}") from exc
+        raise LLMUnavailableError(f"Embedding request failed: {exc}") from exc
     return r.json()["embeddings"]
 
 
@@ -39,7 +34,7 @@ async def embed(texts: list[str], model: str | None = None) -> list[list[float]]
             r = await client.post(f"{_base()}/api/embed", json={"model": model, "input": texts})
             r.raise_for_status()
     except httpx.HTTPError as exc:
-        raise OllamaUnavailableError("Embedding request failed") from exc
+        raise LLMUnavailableError("Embedding request failed") from exc
     return r.json()["embeddings"]
 
 
@@ -67,7 +62,7 @@ async def chat(system: str, user: str, model: str | None = None) -> str:
             r = await client.post(f"{_base()}/api/chat", json=payload)
             r.raise_for_status()
     except httpx.HTTPError as exc:
-        raise OllamaUnavailableError("Chat request failed") from exc
+        raise LLMUnavailableError("Chat request failed") from exc
     body = r.json()
     text = (body.get("message") or {}).get("content", "").strip()
     if body.get("done_reason") == "length":

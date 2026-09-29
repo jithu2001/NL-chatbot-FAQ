@@ -1,13 +1,49 @@
+import Button from "@atlaskit/button/new";
+import Heading from "@atlaskit/heading";
+import RefreshIcon from "@atlaskit/icon/core/refresh";
 import { useEffect, useRef, useState } from "react";
-import { ApiError, askQuestion, getSchemes, groupByAmc, type SchemeInfo } from "./api/chat";
+import { ApiError, askQuestion, getSchemes, type SchemeInfo } from "./api/chat";
 import ChatInput from "./components/ChatInput";
-import ChatMessage, { type Message } from "./components/ChatMessage";
+import ChatMessage, { LoadingEntry, type Message } from "./components/ChatMessage";
 import Disclaimer from "./components/Disclaimer";
 import ExampleQuestions from "./components/ExampleQuestions";
 import HealthStatus from "./components/HealthStatus";
 
 let nextId = 0;
 const newId = () => `m${++nextId}`;
+
+function EmptyState({ schemes, onAsk, disabled }: { schemes: SchemeInfo[]; onAsk: (q: string) => void; disabled: boolean }) {
+  return (
+    <section className="panel" aria-label="Getting started">
+      <div className="panel-section">
+        <Heading size="small" as="h2">
+          Welcome! Ask a factual question about PPFAS Mutual Fund schemes.
+        </Heading>
+        <p>
+          I can answer questions about the schemes below — expense ratio, exit load, minimum SIP, ELSS lock-in,
+          riskometer and benchmark — and how to get account and capital-gains statements. Every answer links to one
+          official source.
+        </p>
+        <ExampleQuestions onSelect={onAsk} disabled={disabled} />
+      </div>
+      {schemes.length > 0 && (
+        <div className="panel-section">
+          <Heading size="xsmall" as="h2">
+            Schemes covered · PPFAS Mutual Fund
+          </Heading>
+          <ul className="scheme-list">
+            {schemes.map((s) => (
+              <li key={s.name}>
+                <span>{s.name}</span>
+                <span className="scheme-category">{s.category}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function App() {
   // Conversation lives only in memory: nothing is persisted or sent anywhere else.
@@ -41,81 +77,51 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <img src="/favicon.svg" alt="" className="h-9 w-9 rounded-lg" />
-            <div>
-              <h1 className="text-lg font-bold leading-tight text-brand-900 dark:text-white">PowerUp Money</h1>
-              <p className="text-sm leading-tight text-slate-600 dark:text-slate-300">Mutual Fund FAQ Assistant</p>
-            </div>
-          </div>
+    <div className="app">
+      <header className="top-nav">
+        <div className="product">
+          <img src="/favicon.svg" alt="" className="product-tile" />
+          <span className="product-name">PowerUp Money</span>
+          <span className="product-divider" aria-hidden="true" />
+          <span className="product-area">Mutual Fund FAQ Assistant</span>
+        </div>
+        <div className="nav-actions">
           {import.meta.env.DEV && <HealthStatus />}
+          {messages.length > 0 && (
+            <Button appearance="subtle" iconBefore={RefreshIcon} isDisabled={loading} onClick={() => setMessages([])}>
+              New conversation
+            </Button>
+          )}
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl space-y-5 px-4 py-5 sm:px-6">
-          <p className="text-[15px] text-slate-600 dark:text-slate-300">
-            Get verified mutual-fund facts from official sources.
-          </p>
-          <Disclaimer />
-
-          {messages.length === 0 && (
-            <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <p className="leading-relaxed">
-                <span className="font-semibold">Welcome!</span> I answer factual questions about selected{" "}
-                <span className="font-medium">PPFAS Mutual Fund</span> and{" "}
-                <span className="font-medium">HDFC Mutual Fund</span> schemes, such as expense ratio, exit load,
-                minimum SIP, lock-in, riskometer and benchmark, plus how to get statements. Every answer links to one
-                official source.
-              </p>
-              {groupByAmc(schemes).map(([amc, list]) => (
-                <div key={amc}>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{amc}</p>
-                  <ul className="flex flex-wrap gap-1.5 text-xs">
-                    {list.map((s) => (
-                      <li key={s.name} className="rounded-md bg-slate-100 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                        {s.name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-              <ExampleQuestions onSelect={ask} disabled={loading} />
-            </div>
-          )}
-
-          <div className="space-y-4" aria-live="polite">
-            {messages.map((m) => (
-              <ChatMessage key={m.id} message={m} />
-            ))}
-            {loading && (
-              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400" role="status">
-                <span
-                  aria-hidden="true"
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-brand-200 border-t-brand-700 dark:border-slate-700 dark:border-t-brand-200"
-                />
-                Checking official sources...
-              </div>
-            )}
+      <main className="scroll-area">
+        <div className="page">
+          <div className="page-header">
+            <Heading size="large" as="h1">
+              Mutual Fund FAQ Assistant
+            </Heading>
+            <p>Get verified mutual-fund facts from official sources.</p>
           </div>
 
-          {messages.length > 0 && !loading && (
-            <details className="text-sm text-slate-500 dark:text-slate-400">
-              <summary className="cursor-pointer select-none">Example questions</summary>
-              <div className="mt-2">
-                <ExampleQuestions onSelect={ask} disabled={loading} />
-              </div>
-            </details>
-          )}
+          <div className="stack-300">
+            <Disclaimer />
+            {messages.length === 0 && <EmptyState schemes={schemes} onAsk={ask} disabled={loading} />}
+            {(messages.length > 0 || loading) && (
+              <ol className="conversation" aria-live="polite" aria-label="Conversation">
+                {messages.map((m) => (
+                  <ChatMessage key={m.id} message={m} />
+                ))}
+                {loading && <LoadingEntry />}
+              </ol>
+            )}
+          </div>
           <div ref={endRef} />
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/95">
-        <div className="mx-auto max-w-3xl px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
+      <footer className="composer">
+        <div className="composer-inner">
           <ChatInput onSubmit={ask} disabled={loading} schemes={schemes} scheme={scheme} onSchemeChange={setScheme} />
         </div>
       </footer>

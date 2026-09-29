@@ -20,7 +20,6 @@ export interface ChatResponse {
   retrieved_date: string | null;
   scheme: string | null;
   scheme_defaulted: boolean;
-  other_schemes: string[];
 }
 
 export interface HealthResponse {
@@ -31,15 +30,7 @@ export interface HealthResponse {
 
 export interface SchemeInfo {
   name: string;
-  amc: string;
   category: string;
-}
-
-/** Schemes grouped by fund house, in API order. */
-export function groupByAmc(schemes: SchemeInfo[]): [string, SchemeInfo[]][] {
-  const groups = new Map<string, SchemeInfo[]>();
-  for (const s of schemes) groups.set(s.amc, [...(groups.get(s.amc) ?? []), s]);
-  return [...groups.entries()];
 }
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";

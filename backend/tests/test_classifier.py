@@ -1,6 +1,11 @@
 import pytest
 
-from app.classifier.question_classifier import REASON_PERFORMANCE, REASON_PREDICTION, Classification, classify
+from app.classifier.question_classifier import (
+    REASON_PERFORMANCE,
+    REASON_PREDICTION,
+    Classification,
+    classify,
+)
 
 FACTUAL = [
     "What is the expense ratio?",
@@ -31,7 +36,11 @@ ADVICE = [
     "Can you recommend a fund?",
     "Is it a good time to invest in the ELSS fund?",
     "How much should I invest every month?",
-    "Which is better: HDFC Flexi Cap or Parag Parikh Flexi Cap?",
+    "Which is better: the Flexi Cap fund or the ELSS fund?",
+    "Is Parag Parikh Flexi Cap good for my portfolio?",
+    "Is the ELSS fund safe?",
+    "Should I add the liquid fund to my portfolio?",
+    "Is the Flexi Cap fund worth it?",
     "Which one is best for tax saving?",
 ]
 

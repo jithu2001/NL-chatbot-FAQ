@@ -13,8 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from app.core.config import get_settings  # noqa: E402
-from app.rag import vector_store  # noqa: E402
+from app.core.config import get_settings
+from app.rag import vector_store
 
 
 def main() -> int:

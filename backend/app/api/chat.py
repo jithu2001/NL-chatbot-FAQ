@@ -46,4 +46,4 @@ async def health() -> HealthResponse:
 
 @router.get("/schemes", response_model=list[SchemeInfo])
 async def schemes() -> list[SchemeInfo]:
-    return [SchemeInfo(name=s.name, amc=s.amc, category=s.category) for s in SCHEMES]
+    return [SchemeInfo(name=s.name, category=s.category) for s in SCHEMES]

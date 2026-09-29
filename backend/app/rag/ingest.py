@@ -1,5 +1,5 @@
 """Ingestion pipeline: official URL -> download -> extract -> clean -> chunk
--> embed (Ollama) -> upsert into ChromaDB.
+-> embed (fastembed or Ollama) -> upsert into ChromaDB.
 
 Idempotent: chunk IDs are deterministic (SRC-001-chunk-0001 ...) and a
 content hash is stored with every chunk, so re-running skips unchanged
@@ -152,6 +152,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Embedding model: {settings.embedding_model_id} (chunks ~{settings.chunk_size_tokens} tokens)")
     print("Loading source registry...")
     sources = load_sources()
+    # Sources removed from the registry must not stay searchable.
+    orphans = sorted(vector_store.indexed_source_ids() - {s.source_id for s in sources})
+    for source_id in orphans:
+        vector_store.delete_source(source_id)
+    if orphans:
+        print(f"Removed {len(orphans)} source(s) no longer in sources.csv: {', '.join(orphans)}")
     if args.only:
         wanted = set(args.only)
         sources = [s for s in sources if s.source_id in wanted]
@@ -166,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         except LLMUnavailableError as exc:
             print(f"  ✗ Embedding error: {exc}\n\nIs Ollama running and is '{get_settings().ollama_embed_model}' pulled?")
             return 2
-        except Exception as exc:  # noqa: BLE001 - report and continue with other sources
+        except Exception as exc:
             print(f"  ✗ Skipped: {type(exc).__name__}: {exc}")
             failed.append(src.source_id)
         print()

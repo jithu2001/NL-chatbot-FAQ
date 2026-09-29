@@ -2,7 +2,7 @@
 
 A **facts-only** mutual fund FAQ assistant. It answers factual questions about five PPFAS Mutual Fund schemes using **only official public sources** from the AMC and AMFI. Every factual answer includes **exactly one official source link** and the source's official **last-updated date**.
 
-It has a React UI, a FastAPI backend and a persistent **ChromaDB** vector store, and supports two provider modes:
+It has a React UI built with the [Atlassian Design System](https://atlassian.design/), a FastAPI backend and a persistent **ChromaDB** vector store, and supports two provider modes:
 
 | Mode | LLM | Embeddings | Use for |
 |---|---|---|---|
@@ -25,7 +25,7 @@ Switch modes with `LLM_PROVIDER` and `EMBEDDING_PROVIDER`; see [Providers](#prov
 - [Requirements](#requirements) · [Ollama installation (local mode)](#ollama-installation-local-mode) · [Model installation](#model-installation) · [Environment variables](#environment-variables)
 - [Backend setup](#backend-setup) · [Frontend setup](#frontend-setup) · [Source ingestion](#source-ingestion) · [Running ChromaDB](#running-chromadb) · [Running the backend](#running-backend) · [Running the frontend](#running-frontend)
 - [Providers](#providers) · [Deploy on Render (free)](#deploy-on-render-free) · [Docker (optional)](#docker-optional)
-- [Testing](#testing) · [Evaluation](#evaluation) · [Known limitations](#known-limitations) · [Disclaimer](#disclaimer)
+- [Testing](#testing) · [Evaluation](#evaluation) · [Known limitations](#known-limitations) · [Deliverables](#deliverables) · [Disclaimer](#disclaimer)
 
 ---
 
@@ -122,7 +122,7 @@ There are 24 sources: 18 from PPFAS (AMC) and 6 from AMFI. The registry is [`dat
 ```text
 ┌───────────────────────────┐      POST /api/chat       ┌──────────────────────────────────────────────┐
 │ React + TS + Vite +       │ ────────────────────────► │ FastAPI backend                              │
-│ Tailwind (localhost:5173) │ ◄──────────────────────── │                                              │
+│ Atlassian DS (:5173)      │ ◄──────────────────────── │                                              │
 └───────────────────────────┘   answer + 1 source       │  1. PII detector ──► refuse (no LLM, no log) │
                                                         │  2. Classifier  ──► ADVICE / UNSUPPORTED     │
                                                         │                     templates + registry src │
@@ -186,12 +186,13 @@ Official URL (sources.csv) → download (cached in data/documents/) → extract 
 
 ```text
 .
-├── frontend/                     React + TypeScript + Vite + Tailwind CSS v4
+├── frontend/                     React + TypeScript + Vite + Atlassian Design System (@atlaskit)
 │   ├── src/
 │   │   ├── components/           ChatMessage, ChatInput, ExampleQuestions, SourceCitation, Disclaimer, HealthStatus
 │   │   ├── api/chat.ts           API client (/api/chat, /api/health, /api/schemes)
-│   │   ├── App.tsx
-│   │   └── main.tsx
+│   │   ├── App.tsx               app shell: top navigation, page header, empty state, conversation
+│   │   ├── index.css             layout only; every colour/space/font is an ADS token (--ds-*)
+│   │   └── main.tsx              loads the ADS light/dark, spacing, typography and shape themes
 │   ├── package.json
 │   ├── vite.config.ts            dev proxy /api → http://localhost:8000
 ├── backend/
@@ -206,7 +207,7 @@ Official URL (sources.csv) → download (cached in data/documents/) → extract 
 │   │   ├── services/answer_pipeline.py
 │   │   ├── core/                 config.py, catalog.py (schemes/topics), sources.py (registry)
 │   │   └── models/schemas.py
-│   ├── tests/                    pytest unit tests (80)
+│   ├── tests/                    pytest unit tests (84)
 │   ├── requirements.txt, requirements-dev.txt, .env.example
 ├── data/
 │   ├── sources.csv               official source registry
@@ -513,7 +514,7 @@ pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-There are 80 unit tests covering:
+There are 84 unit tests covering:
 
 - The classifier: FACTUAL, ADVICE and UNSUPPORTED examples, including false-positive traps such as *"What is the exit load if I redeem it within a year?"*.
 - The PII detector: positives and negatives.
@@ -564,6 +565,30 @@ These are the latest results on 31 questions; see [`evaluation/README.md`](evalu
 - **Default scheme.** Questions that name no scheme are answered for the Flexi Cap fund; the answer and the UI say so.
 - **Single-turn.** "This fund" is not resolved from earlier messages. Use the scheme selector or name the scheme.
 - Answers are for **Regular and Direct plans as published**. Account-specific data (holdings, balances, transactions) is out of scope by design.
+
+## Deliverables
+
+| Brief requirement | Where |
+|---|---|
+| Working prototype link | <https://nl-chatbot-faq.onrender.com/> (Render free plan; first visit after 15 min idle takes about 1 min to wake) |
+| Source list (15–25 URLs) | [`data/sources.csv`](data/sources.csv): 24 official PPFAS (AMC) and AMFI URLs, also tabled under [Official sources](#official-sources) |
+| README: setup, scope, known limits | This file: [setup](#backend-setup), [scope](#selected-amc), [known limitations](#known-limitations) |
+| Sample Q&A (5–10 queries with answers and links) | [`evaluation/sample_answers.md`](evaluation/sample_answers.md): 10 real answers, regenerate with `python evaluation/generate_sample_answers.py` |
+| Disclaimer snippet used in the UI | [Below](#disclaimer-snippet-used-in-the-ui) |
+
+**Behaviour required by the brief:**
+
+- **Answers:** every answer carries exactly one official source link, including refusals. Advice and portfolio questions link the scheme's KIM or AMFI investor education. Performance questions link the official factsheet. Personal-data refusals link the AMC's Investor Desk. "Couldn't verify" answers link the scheme's KIM or the official KIM/SID downloads page.
+- **Length and dates:** answers are at most 3 sentences and show "Last updated from sources: …".
+- **Personal data:** PAN, Aadhaar, account or folio numbers, OTPs, emails and phone numbers are refused before any processing, and are never stored or logged.
+- **Performance:** returns are never computed or compared.
+
+### Disclaimer snippet used in the UI
+
+Shown as a warning banner at the top of every page ([`Disclaimer.tsx`](frontend/src/components/Disclaimer.tsx)):
+
+> **Facts-only. No investment advice.**
+> Information is provided from publicly available official AMC (PPFAS Mutual Fund) and AMFI sources. Always verify the latest official scheme documents.
 
 ## Disclaimer
 

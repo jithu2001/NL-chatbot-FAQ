@@ -14,7 +14,7 @@ POSITIVE = [
     ("my password is hunter2", "PASSWORD"),
     ("folio no: 12345678/90", "FOLIO"),
     ("account number 123456789012", "BANK_ACCOUNT"),
-    ("IFSC HDFC0001234", "IFSC"),
+    ("IFSC SBIN0001234", "IFSC"),
 ]
 
 NEGATIVE = [

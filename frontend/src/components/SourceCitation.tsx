@@ -1,3 +1,5 @@
+import PageIcon from "@atlaskit/icon/core/page";
+import Link from "@atlaskit/link";
 import type { SourceInfo } from "../api/chat";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -22,30 +24,26 @@ function sourceHref(source: SourceInfo): string {
 export default function SourceCitation({ source }: { source: SourceInfo }) {
   const hasOfficialDate = ISO_DATE.test(source.last_updated);
   return (
-    <div className="mt-3 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
-      <p className="text-slate-700 dark:text-slate-200">
-        <span className="font-medium">Source: </span>
-        <a
-          href={sourceHref(source)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-brand-700 underline decoration-brand-200 underline-offset-2 hover:decoration-brand-600 dark:text-brand-200 dark:decoration-brand-500/50"
-        >
-          {source.title}
-          {source.page ? `, p. ${source.page}` : ""}
-          <span aria-hidden="true"> ↗</span>
-          <span className="sr-only"> (opens official source in a new tab)</span>
-        </a>
-      </p>
-      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-        {source.source_type} · {source.authority}
-      </p>
-      <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-300">
-        Last updated from sources: <span className="font-medium">{formatDate(source.last_updated)}</span>
-      </p>
-      {!hasOfficialDate && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">Source retrieved: {formatDate(source.retrieved_date)}</p>
-      )}
+    <div className="source-card">
+      <span className="source-icon" aria-hidden="true">
+        <PageIcon label="" color="var(--ds-icon-brand)" />
+      </span>
+      <div className="source-details">
+        <div className="source-label">Source</div>
+        <div className="source-title">
+          <Link href={sourceHref(source)} target="_blank">
+            {source.title}
+            {source.page ? `, p. ${source.page}` : ""}
+          </Link>
+        </div>
+        <div className="source-meta">
+          <span>
+            {source.source_type} · {source.authority}
+          </span>
+          <span>Last updated from sources: {formatDate(source.last_updated)}</span>
+          {!hasOfficialDate && <span>Source retrieved: {formatDate(source.retrieved_date)}</span>}
+        </div>
+      </div>
     </div>
   );
 }
